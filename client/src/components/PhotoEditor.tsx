@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, Circle, Trash2, Upload, RotateCw, Maximize2, MapPin } from "lucide-react";
+import { ArrowRight, Circle, Trash2, Upload, RotateCw, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -69,7 +69,6 @@ export function PhotoEditor({
         const fontSize = Math.max(24, img.height / 30);
         ctx.font = `${fontSize}px Roboto, sans-serif`;
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-        const textMetrics = ctx.measureText(comment);
         const padding = fontSize * 0.5;
         const y = commentPosition === "top" ? padding : img.height - fontSize - padding;
 
@@ -340,122 +339,160 @@ export function PhotoEditor({
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-black safe-area-inset">
+    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-slate-950 via-indigo-950 to-black safe-area-inset overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(99,102,241,0.15),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(168,85,247,0.15),transparent_50%)]"></div>
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shrink-0 shadow-sm">
-        <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Edit Photo</h2>
+      <div className="relative flex items-center justify-between p-3 sm:p-4 border-b border-white/10 bg-black/40 backdrop-blur-2xl shrink-0 shadow-2xl z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </div>
+          <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Edit Photo
+          </h2>
+        </div>
         <div className="flex gap-2">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={onCancel} 
             data-testid="button-cancel"
-            className="rounded-xl font-semibold"
+            className="rounded-xl font-bold bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300"
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleUpload} 
-            disabled={isUploading} 
-            size="sm" 
-            data-testid="button-upload"
-            className="rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30"
-          >
-            {isUploading ? (
-              <span className="flex items-center gap-2">
-                <Upload className="w-4 h-4 animate-pulse" />
-                <span className="hidden sm:inline">Uploading...</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <Upload className="w-4 h-4" />
-                <span className="hidden sm:inline">Upload</span>
-              </span>
-            )}
-          </Button>
+          <div className="relative">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur opacity-50"></div>
+            <Button 
+              onClick={handleUpload} 
+              disabled={isUploading} 
+              size="sm" 
+              data-testid="button-upload"
+              className="relative rounded-xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-purple-700 hover:from-blue-700 hover:via-blue-800 hover:to-purple-800 shadow-lg shadow-blue-500/40 transition-all duration-300"
+            >
+              {isUploading ? (
+                <span className="flex items-center gap-2">
+                  <Upload className="w-4 h-4 animate-pulse" />
+                  <span className="hidden sm:inline">Uploading...</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  <span className="hidden sm:inline">Upload</span>
+                </span>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
       {isUploading && (
-        <div className="px-3 sm:px-4 pt-2 shrink-0">
-          <Progress value={uploadProgress} className="w-full h-2" data-testid="progress-upload" />
-          <p className="text-center text-sm text-muted-foreground mt-2">{uploadProgress}%</p>
+        <div className="relative px-3 sm:px-4 pt-3 pb-2 shrink-0 bg-black/20 backdrop-blur-sm z-10">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-md opacity-30"></div>
+            <Progress value={uploadProgress} className="relative w-full h-3 bg-white/10" data-testid="progress-upload" />
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-sm text-white/80 font-semibold">Uploading your masterpiece...</p>
+            <p className="text-sm font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{uploadProgress}%</p>
+          </div>
         </div>
       )}
 
       {/* Canvas Area */}
-      <div className="flex-1 overflow-auto p-2 sm:p-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-black">
+      <div className="relative flex-1 overflow-auto p-2 sm:p-4 z-10">
         <div ref={containerRef} className="max-w-4xl mx-auto">
-          <canvas
-            ref={canvasRef}
-            onClick={handleCanvasClick}
-            onMouseDown={handleCanvasMouseDown}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-            onMouseLeave={handleCanvasMouseUp}
-            onTouchStart={(e) => {
-              const touch = e.touches[0];
-              const mouseEvent = new MouseEvent('mousedown', {
-                clientX: touch.clientX,
-                clientY: touch.clientY,
-              });
-              handleCanvasMouseDown(mouseEvent as any);
-            }}
-            onTouchMove={(e) => {
-              const touch = e.touches[0];
-              const mouseEvent = new MouseEvent('mousemove', {
-                clientX: touch.clientX,
-                clientY: touch.clientY,
-              });
-              handleCanvasMouseMove(mouseEvent as any);
-            }}
-            onTouchEnd={() => handleCanvasMouseUp()}
-            className="w-full border-2 border-gray-300 dark:border-gray-700 rounded-2xl cursor-crosshair shadow-2xl touch-none bg-white"
-            data-testid="canvas-editor"
-          />
+          <div className="relative group">
+            {/* Glow Effect */}
+            <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
+            
+            {/* Canvas Container */}
+            <div className="relative bg-gradient-to-br from-white/5 to-white/10 p-1 rounded-3xl backdrop-blur-sm border border-white/20">
+              <canvas
+                ref={canvasRef}
+                onClick={handleCanvasClick}
+                onMouseDown={handleCanvasMouseDown}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseUp={handleCanvasMouseUp}
+                onMouseLeave={handleCanvasMouseUp}
+                onTouchStart={(e) => {
+                  const touch = e.touches[0];
+                  const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                  });
+                  handleCanvasMouseDown(mouseEvent as any);
+                }}
+                onTouchMove={(e) => {
+                  const touch = e.touches[0];
+                  const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                  });
+                  handleCanvasMouseMove(mouseEvent as any);
+                }}
+                onTouchEnd={() => handleCanvasMouseUp()}
+                className="w-full rounded-2xl cursor-crosshair shadow-2xl touch-none bg-white"
+                data-testid="canvas-editor"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Controls */}
-      <Card className="m-2 sm:m-4 p-3 sm:p-4 space-y-3 sm:space-y-4 shrink-0 max-h-[40vh] overflow-y-auto rounded-2xl shadow-xl border-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl">
+      <Card className="relative m-2 sm:m-4 p-4 sm:p-5 space-y-4 shrink-0 max-h-[40vh] overflow-y-auto rounded-3xl shadow-2xl border border-white/20 bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-2xl z-10">
         <div>
-          <Label className="text-sm font-bold mb-3 block text-gray-700 dark:text-gray-300">Add Annotations</Label>
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              variant={placingSticker === "arrow" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPlacingSticker("arrow")}
-              data-testid="button-add-arrow"
-              className="flex-1 sm:flex-none rounded-xl font-semibold h-11"
-            >
-              <ArrowRight className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Arrow</span>
-            </Button>
-            <Button
-              variant={placingSticker === "circle" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPlacingSticker("circle")}
-              data-testid="button-add-circle"
-              className="flex-1 sm:flex-none rounded-xl font-semibold h-11"
-            >
-              <Circle className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Circle</span>
-            </Button>
+          <Label className="text-sm font-bold mb-3 block text-white/90 tracking-wide uppercase">Add Annotations</Label>
+          <div className="flex gap-3 flex-wrap">
+            <div className="relative flex-1 sm:flex-none">
+              {placingSticker === "arrow" && <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl blur opacity-60"></div>}
+              <Button
+                variant={placingSticker === "arrow" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPlacingSticker("arrow")}
+                data-testid="button-add-arrow"
+                className="relative w-full rounded-2xl font-bold h-12 bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-amber-500/30 hover:from-amber-500/30 hover:to-orange-500/30 text-white transition-all duration-300"
+              >
+                <ArrowRight className="w-5 h-5 sm:mr-2" />
+                <span className="hidden sm:inline">Arrow</span>
+              </Button>
+            </div>
+            <div className="relative flex-1 sm:flex-none">
+              {placingSticker === "circle" && <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl blur opacity-60"></div>}
+              <Button
+                variant={placingSticker === "circle" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPlacingSticker("circle")}
+                data-testid="button-add-circle"
+                className="relative w-full rounded-2xl font-bold h-12 bg-gradient-to-br from-red-500/20 to-pink-500/20 border-red-500/30 hover:from-red-500/30 hover:to-pink-500/30 text-white transition-all duration-300"
+              >
+                <Circle className="w-5 h-5 sm:mr-2" />
+                <span className="hidden sm:inline">Circle</span>
+              </Button>
+            </div>
           </div>
         </div>
 
         {selectedSticker && (
-          <div>
-            <Label className="text-sm font-bold mb-3 block text-gray-700 dark:text-gray-300">Transform Selected</Label>
-            <div className="flex gap-2 flex-wrap">
+          <div className="animate-in slide-in-from-bottom duration-300">
+            <Label className="text-sm font-bold mb-3 block text-white/90 tracking-wide uppercase">Transform Selected</Label>
+            <div className="flex gap-3 flex-wrap">
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={rotateSelected} 
                 data-testid="button-rotate" 
-                className="flex-1 sm:flex-none rounded-xl font-semibold h-11"
+                className="flex-1 sm:flex-none rounded-2xl font-bold h-12 bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 text-white transition-all duration-300"
               >
-                <RotateCw className="w-4 h-4 sm:mr-2" />
+                <RotateCw className="w-5 h-5 sm:mr-2" />
                 <span className="hidden sm:inline">Rotate</span>
               </Button>
               <Button 
@@ -463,19 +500,19 @@ export function PhotoEditor({
                 size="sm" 
                 onClick={resizeSelected} 
                 data-testid="button-resize" 
-                className="flex-1 sm:flex-none rounded-xl font-semibold h-11"
+                className="flex-1 sm:flex-none rounded-2xl font-bold h-12 bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20 text-white transition-all duration-300"
               >
-                <Maximize2 className="w-4 h-4 sm:mr-2" />
+                <Maximize2 className="w-5 h-5 sm:mr-2" />
                 <span className="hidden sm:inline">Resize</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={deleteSelected}
-                className="text-destructive flex-1 sm:flex-none rounded-xl font-semibold h-11 hover:bg-red-50 dark:hover:bg-red-950"
+                className="flex-1 sm:flex-none rounded-2xl font-bold h-12 bg-red-500/10 border-red-500/30 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all duration-300"
                 data-testid="button-delete-sticker"
               >
-                <Trash2 className="w-4 h-4 sm:mr-2" />
+                <Trash2 className="w-5 h-5 sm:mr-2" />
                 <span className="hidden sm:inline">Delete</span>
               </Button>
             </div>
@@ -483,15 +520,15 @@ export function PhotoEditor({
         )}
 
         <div>
-          <Label className="text-sm font-bold mb-3 block text-gray-700 dark:text-gray-300">Comment Position</Label>
+          <Label className="text-sm font-bold mb-3 block text-white/90 tracking-wide uppercase">Comment Position</Label>
           <RadioGroup value={commentPosition} onValueChange={(v) => setCommentPosition(v as "top" | "bottom")}>
-            <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-              <RadioGroupItem value="top" id="top" data-testid="radio-comment-top" />
-              <Label htmlFor="top" className="cursor-pointer font-medium">Top</Label>
+            <div className="flex items-center space-x-3 p-3 rounded-2xl hover:bg-white/5 transition-colors cursor-pointer">
+              <RadioGroupItem value="top" id="top" data-testid="radio-comment-top" className="border-white/30" />
+              <Label htmlFor="top" className="cursor-pointer font-semibold text-white/90">Top</Label>
             </div>
-            <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-              <RadioGroupItem value="bottom" id="bottom" data-testid="radio-comment-bottom" />
-              <Label htmlFor="bottom" className="cursor-pointer font-medium">Bottom</Label>
+            <div className="flex items-center space-x-3 p-3 rounded-2xl hover:bg-white/5 transition-colors cursor-pointer">
+              <RadioGroupItem value="bottom" id="bottom" data-testid="radio-comment-bottom" className="border-white/30" />
+              <Label htmlFor="bottom" className="cursor-pointer font-semibold text-white/90">Bottom</Label>
             </div>
           </RadioGroup>
         </div>
