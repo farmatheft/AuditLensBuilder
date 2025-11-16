@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, MapPin, Loader2 } from "lucide-react";
+import { Camera, MapPin, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -13,6 +13,7 @@ interface CameraCaptureProps {
 
 export function CameraCapture({ onCapture, comment, onCommentChange }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [location, setLocation] = useState<Geolocation | null>(null);
   const [locationError, setLocationError] = useState<string>("");
@@ -91,6 +92,27 @@ export function CameraCapture({ onCapture, comment, onCommentChange }: CameraCap
     setTimeout(() => setIsCapturing(false), 300);
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageData = e.target?.result as string;
+      onCapture(imageData, location, comment);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="relative w-full h-full flex flex-col bg-black">
       {cameraError ? (
@@ -138,7 +160,15 @@ export function CameraCapture({ onCapture, comment, onCommentChange }: CameraCap
             />
           </div>
 
-          <div className="p-6 bg-black/80 backdrop-blur-md flex justify-center">
+          <div className="p-6 bg-black/80 backdrop-blur-md flex justify-center items-center gap-4">
+            <Button
+              size="icon"
+              onClick={handleUploadClick}
+              className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 border-2 border-white/50 shadow-lg hover-elevate"
+              data-testid="button-upload"
+            >
+              <Upload className="w-6 h-6 text-white" />
+            </Button>
             <Button
               size="icon"
               onClick={capturePhoto}
@@ -148,6 +178,14 @@ export function CameraCapture({ onCapture, comment, onCommentChange }: CameraCap
             >
               <Camera className="w-8 h-8 text-black" />
             </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+              data-testid="input-file"
+            />
           </div>
         </>
       )}
