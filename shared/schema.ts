@@ -49,7 +49,7 @@ export const photosRelations = relations(photos, ({ one }) => ({
 // Sticker type definition
 export interface Sticker {
   id: string;
-  type: "arrow" | "circle";
+  type: "arrow" | "circle" | "circle-filled" | "crosshair" | "arrow-3d";
   x: number;
   y: number;
   width: number;
@@ -70,7 +70,7 @@ export const insertPhotoSchema = createInsertSchema(photos).omit({
 }).extend({
   stickers: z.array(z.object({
     id: z.string(),
-    type: z.enum(["arrow", "circle"]),
+    type: z.enum(["arrow", "circle", "circle-filled", "crosshair", "arrow-3d"]),
     x: z.number(),
     y: z.number(),
     width: z.number(),

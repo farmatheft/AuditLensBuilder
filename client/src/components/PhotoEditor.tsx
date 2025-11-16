@@ -28,7 +28,7 @@ export function PhotoEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
-  const [placingSticker, setPlacingSticker] = useState<"arrow" | "circle" | null>(null);
+  const [placingSticker, setPlacingSticker] = useState<"arrow" | "circle" | "circle-filled" | "crosshair" | "arrow-3d" | null>(null);
   const [commentPosition, setCommentPosition] = useState<"top" | "bottom">("top");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -152,9 +152,9 @@ export function PhotoEditor({
         ctx.translate(-centerX, -centerY);
 
         if (sticker.type === "arrow") {
-          ctx.strokeStyle = "rgba(255, 193, 7, 0.9)";
-          ctx.fillStyle = "rgba(255, 193, 7, 0.9)";
-          ctx.lineWidth = Math.max(3, sticker.width / 20);
+          ctx.strokeStyle = "rgb(255, 200, 0)";
+          ctx.fillStyle = "rgb(255, 200, 0)";
+          ctx.lineWidth = Math.max(4, sticker.width / 20);
 
           ctx.beginPath();
           ctx.moveTo(sticker.x, sticker.y + sticker.height / 2);
@@ -167,9 +167,30 @@ export function PhotoEditor({
           ctx.lineTo(sticker.x + sticker.width * 0.7, sticker.y + sticker.height * 0.8);
           ctx.closePath();
           ctx.fill();
+        } else if (sticker.type === "arrow-3d") {
+          const gradient = ctx.createLinearGradient(sticker.x, sticker.y, sticker.x + sticker.width, sticker.y + sticker.height);
+          gradient.addColorStop(0, "rgb(255, 200, 0)");
+          gradient.addColorStop(0.5, "rgb(255, 150, 0)");
+          gradient.addColorStop(1, "rgb(200, 100, 0)");
+          
+          ctx.strokeStyle = gradient;
+          ctx.fillStyle = gradient;
+          ctx.lineWidth = Math.max(5, sticker.width / 18);
+
+          ctx.beginPath();
+          ctx.moveTo(sticker.x, sticker.y + sticker.height / 2);
+          ctx.lineTo(sticker.x + sticker.width * 0.65, sticker.y + sticker.height / 2);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(sticker.x + sticker.width, sticker.y + sticker.height / 2);
+          ctx.lineTo(sticker.x + sticker.width * 0.65, sticker.y + sticker.height * 0.15);
+          ctx.lineTo(sticker.x + sticker.width * 0.65, sticker.y + sticker.height * 0.85);
+          ctx.closePath();
+          ctx.fill();
         } else if (sticker.type === "circle") {
-          ctx.strokeStyle = "rgba(244, 67, 54, 0.9)";
-          ctx.lineWidth = Math.max(3, sticker.width / 15);
+          ctx.strokeStyle = "rgb(255, 50, 50)";
+          ctx.lineWidth = Math.max(4, sticker.width / 15);
           ctx.beginPath();
           ctx.ellipse(
             sticker.x + sticker.width / 2,
@@ -180,6 +201,50 @@ export function PhotoEditor({
             0,
             2 * Math.PI
           );
+          ctx.stroke();
+        } else if (sticker.type === "circle-filled") {
+          ctx.fillStyle = "rgba(255, 50, 50, 0.4)";
+          ctx.strokeStyle = "rgb(255, 50, 50)";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.ellipse(
+            sticker.x + sticker.width / 2,
+            sticker.y + sticker.height / 2,
+            sticker.width / 2,
+            sticker.height / 2,
+            0,
+            0,
+            2 * Math.PI
+          );
+          ctx.fill();
+          ctx.stroke();
+        } else if (sticker.type === "crosshair") {
+          ctx.strokeStyle = "rgb(0, 255, 100)";
+          ctx.lineWidth = Math.max(3, sticker.width / 25);
+          
+          const cx = sticker.x + sticker.width / 2;
+          const cy = sticker.y + sticker.height / 2;
+          
+          // Outer circle
+          ctx.beginPath();
+          ctx.arc(cx, cy, sticker.width / 2, 0, 2 * Math.PI);
+          ctx.stroke();
+          
+          // Vertical line
+          ctx.beginPath();
+          ctx.moveTo(cx, sticker.y);
+          ctx.lineTo(cx, sticker.y + sticker.height);
+          ctx.stroke();
+          
+          // Horizontal line
+          ctx.beginPath();
+          ctx.moveTo(sticker.x, cy);
+          ctx.lineTo(sticker.x + sticker.width, cy);
+          ctx.stroke();
+          
+          // Inner circle
+          ctx.beginPath();
+          ctx.arc(cx, cy, sticker.width / 8, 0, 2 * Math.PI);
           ctx.stroke();
         }
 
@@ -451,33 +516,61 @@ export function PhotoEditor({
       <Card className="relative m-2 sm:m-4 p-4 sm:p-5 space-y-4 shrink-0 max-h-[40vh] overflow-y-auto rounded-3xl shadow-2xl border border-white/20 bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-2xl z-10">
         <div>
           <Label className="text-sm font-bold mb-3 block text-white/90 tracking-wide uppercase">Add Annotations</Label>
-          <div className="flex gap-3 flex-wrap">
-            <div className="relative flex-1 sm:flex-none">
-              {placingSticker === "arrow" && <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl blur opacity-60"></div>}
-              <Button
-                variant={placingSticker === "arrow" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setPlacingSticker("arrow")}
-                data-testid="button-add-arrow"
-                className="relative w-full rounded-2xl font-bold h-12 bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-amber-500/30 hover:from-amber-500/30 hover:to-orange-500/30 text-white transition-all duration-300"
-              >
-                <ArrowRight className="w-5 h-5 sm:mr-2" />
-                <span className="hidden sm:inline">Arrow</span>
-              </Button>
-            </div>
-            <div className="relative flex-1 sm:flex-none">
-              {placingSticker === "circle" && <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl blur opacity-60"></div>}
-              <Button
-                variant={placingSticker === "circle" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setPlacingSticker("circle")}
-                data-testid="button-add-circle"
-                className="relative w-full rounded-2xl font-bold h-12 bg-gradient-to-br from-red-500/20 to-pink-500/20 border-red-500/30 hover:from-red-500/30 hover:to-pink-500/30 text-white transition-all duration-300"
-              >
-                <Circle className="w-5 h-5 sm:mr-2" />
-                <span className="hidden sm:inline">Circle</span>
-              </Button>
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <Button
+              variant={placingSticker === "arrow" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPlacingSticker("arrow")}
+              data-testid="button-add-arrow"
+              className="rounded-lg font-bold h-10 bg-amber-500/20 border-amber-500/30 hover:bg-amber-500/30 text-white text-xs"
+            >
+              <ArrowRight className="w-4 h-4 mr-1" />
+              Arrow
+            </Button>
+            <Button
+              variant={placingSticker === "arrow-3d" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPlacingSticker("arrow-3d")}
+              data-testid="button-add-arrow-3d"
+              className="rounded-lg font-bold h-10 bg-orange-500/20 border-orange-500/30 hover:bg-orange-500/30 text-white text-xs"
+            >
+              <ArrowRight className="w-4 h-4 mr-1" />
+              3D Arrow
+            </Button>
+            <Button
+              variant={placingSticker === "circle" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPlacingSticker("circle")}
+              data-testid="button-add-circle"
+              className="rounded-lg font-bold h-10 bg-red-500/20 border-red-500/30 hover:bg-red-500/30 text-white text-xs"
+            >
+              <Circle className="w-4 h-4 mr-1" />
+              Circle
+            </Button>
+            <Button
+              variant={placingSticker === "circle-filled" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPlacingSticker("circle-filled")}
+              data-testid="button-add-circle-filled"
+              className="rounded-lg font-bold h-10 bg-pink-500/20 border-pink-500/30 hover:bg-pink-500/30 text-white text-xs"
+            >
+              <Circle className="w-4 h-4 mr-1 fill-current" />
+              Filled
+            </Button>
+            <Button
+              variant={placingSticker === "crosshair" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPlacingSticker("crosshair")}
+              data-testid="button-add-crosshair"
+              className="rounded-lg font-bold h-10 bg-green-500/20 border-green-500/30 hover:bg-green-500/30 text-white text-xs"
+            >
+              <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="2" x2="12" y2="22" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+              </svg>
+              Target
+            </Button>
           </div>
         </div>
 

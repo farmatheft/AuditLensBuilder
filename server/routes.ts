@@ -42,14 +42,15 @@ async function compositeImageWithOverlays(
 
   const svgOverlays: string[] = [];
 
-  // Modern Comment Overlay with gradient background
+  // Unified box height and font size
+  const fontSize = Math.max(16, height / 60);
+  const padding = fontSize * 0.6;
+  const boxHeight = fontSize * 2.2;
+
+  // Simple Comment Overlay
   if (comment) {
-    const fontSize = Math.max(28, height / 28);
-    const padding = fontSize * 0.8;
-    const lineHeight = fontSize * 1.4;
-    const y = commentPosition === "top" ? padding + fontSize : height - padding - fontSize;
+    const y = commentPosition === "top" ? padding : height - boxHeight - padding;
     
-    // Escape special characters
     const escapedComment = comment
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -58,116 +59,37 @@ async function compositeImageWithOverlays(
 
     const commentSvg = `
       <svg width="${width}" height="${height}">
-        <defs>
-          <linearGradient id="commentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:rgba(0,0,0,0.95);stop-opacity:1" />
-            <stop offset="100%" style="stop-color:rgba(30,30,30,0.95);stop-opacity:1" />
-          </linearGradient>
-          <filter id="commentShadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-            <feOffset dx="0" dy="2" result="offsetblur"/>
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.5"/>
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        
-        <!-- Background bar with gradient -->
-        <rect x="0" y="${y - fontSize - padding}" width="${width}" height="${lineHeight + padding}" 
-              fill="url(#commentGradient)" filter="url(#commentShadow)" />
-        
-        <!-- Accent line -->
-        <rect x="0" y="${y - fontSize - padding}" width="${width}" height="4" 
-              fill="rgba(59,130,246,0.8)" />
-        
-        <!-- Comment text with shadow -->
-        <text x="${padding * 1.5}" y="${y}" 
-              font-family="'Inter', 'Roboto', 'Segoe UI', sans-serif" 
+        <rect x="0" y="${y}" width="${width}" height="${boxHeight}" 
+              fill="rgba(0,0,0,0.85)" />
+        <text x="${padding}" y="${y + boxHeight / 2 + fontSize * 0.35}" 
+              font-family="'Courier New', monospace" 
               font-size="${fontSize}" 
-              font-weight="600"
-              fill="white" 
-              filter="url(#commentShadow)">${escapedComment}</text>
+              fill="white">${escapedComment}</text>
       </svg>
     `;
     svgOverlays.push(commentSvg);
   }
 
-  // Premium Location Overlay - Bottom Left
+  // Simple Location Overlay - Bottom Left
   if (latitude !== null && longitude !== null) {
-    const fontSize = Math.max(20, height / 50);
-    const padding = fontSize * 0.8;
-    const iconSize = fontSize * 1.8;
-    const boxWidth = Math.min(width * 0.45, 500);
-    const boxHeight = fontSize * 3.5;
+    const boxWidth = Math.min(width * 0.5, 400);
     const boxX = padding;
     const boxY = height - boxHeight - padding;
 
     const locationSvg = `
       <svg width="${width}" height="${height}">
-        <defs>
-          <linearGradient id="locationGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:rgba(0,0,0,0.92);stop-opacity:1" />
-            <stop offset="100%" style="stop-color:rgba(20,20,20,0.92);stop-opacity:1" />
-          </linearGradient>
-          <filter id="locationGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
-            <feOffset dx="0" dy="2" result="offsetblur"/>
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.6"/>
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-          <linearGradient id="pinGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:rgb(16,185,129);stop-opacity:1" />
-            <stop offset="100%" style="stop-color:rgb(5,150,105);stop-opacity:1" />
-          </linearGradient>
-        </defs>
-        
-        <!-- Rounded background box with gradient -->
         <rect x="${boxX}" y="${boxY}" width="${boxWidth}" height="${boxHeight}" 
-              rx="16" ry="16"
-              fill="url(#locationGradient)" 
-              stroke="rgba(16,185,129,0.3)" 
-              stroke-width="2"
-              filter="url(#locationGlow)" />
-        
-        <!-- Map pin icon with gradient -->
-        <g transform="translate(${boxX + padding * 1.5}, ${boxY + boxHeight / 2})">
-          <circle cx="0" cy="-${iconSize * 0.15}" r="${iconSize * 0.35}" 
-                  fill="url(#pinGradient)" 
-                  filter="url(#locationGlow)" />
-          <path d="M 0,${iconSize * 0.25} L -${iconSize * 0.25},-${iconSize * 0.1} L ${iconSize * 0.25},-${iconSize * 0.1} Z" 
-                fill="url(#pinGradient)" 
-                filter="url(#locationGlow)" />
-        </g>
-        
-        <!-- "LOCATION" label -->
-        <text x="${boxX + padding * 1.5 + iconSize}" y="${boxY + padding + fontSize * 0.8}" 
-              font-family="'Inter', 'Roboto', sans-serif" 
-              font-size="${fontSize * 0.7}" 
-              font-weight="700"
-              letter-spacing="1.5"
-              fill="rgba(16,185,129,0.9)">LOCATION</text>
-        
-        <!-- Coordinates -->
-        <text x="${boxX + padding * 1.5 + iconSize}" y="${boxY + padding + fontSize * 2.2}" 
-              font-family="'Roboto Mono', 'Courier New', monospace" 
-              font-size="${fontSize * 0.95}" 
-              font-weight="600"
-              fill="white">${latitude.toFixed(6)}, ${longitude.toFixed(6)}</text>
+              fill="rgba(0,0,0,0.85)" />
+        <text x="${boxX + padding}" y="${boxY + boxHeight / 2 + fontSize * 0.35}" 
+              font-family="'Courier New', monospace" 
+              font-size="${fontSize}" 
+              fill="white">LOC: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}</text>
       </svg>
     `;
     svgOverlays.push(locationSvg);
   }
 
-  // Premium Timestamp Overlay - Bottom Right
+  // Simple Timestamp Overlay - Bottom Right
   const timestamp = new Date().toLocaleString('en-US', {
     year: 'numeric',
     month: '2-digit',
@@ -178,140 +100,112 @@ async function compositeImageWithOverlays(
     hour12: false
   });
   
-  const fontSize = Math.max(18, height / 55);
-  const padding = fontSize * 0.8;
-  const boxHeight = fontSize * 2.8;
-  const boxWidth = fontSize * 12;
+  const boxWidth = fontSize * 11;
   const boxX = width - boxWidth - padding;
   const boxY = height - boxHeight - padding;
 
   const timestampSvg = `
     <svg width="${width}" height="${height}">
-      <defs>
-        <linearGradient id="timestampGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" style="stop-color:rgba(20,20,20,0.95);stop-opacity:1" />
-          <stop offset="100%" style="stop-color:rgba(0,0,0,0.95);stop-opacity:1" />
-        </linearGradient>
-        <filter id="timestampShadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-          <feOffset dx="0" dy="2" result="offsetblur"/>
-          <feComponentTransfer>
-            <feFuncA type="linear" slope="0.5"/>
-          </feComponentTransfer>
-          <feMerge>
-            <feMergeNode/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-      
-      <!-- Rounded background box -->
       <rect x="${boxX}" y="${boxY}" width="${boxWidth}" height="${boxHeight}" 
-            rx="12" ry="12"
-            fill="url(#timestampGradient)" 
-            stroke="rgba(255,255,255,0.1)" 
-            stroke-width="1"
-            filter="url(#timestampShadow)" />
-      
-      <!-- Clock icon -->
-      <g transform="translate(${boxX + padding}, ${boxY + boxHeight / 2})">
-        <circle cx="0" cy="0" r="${fontSize * 0.6}" 
-                fill="none" 
-                stroke="rgba(147,197,253,0.8)" 
-                stroke-width="2" />
-        <line x1="0" y1="0" x2="0" y2="-${fontSize * 0.35}" 
-              stroke="rgba(147,197,253,0.8)" 
-              stroke-width="2" 
-              stroke-linecap="round" />
-        <line x1="0" y1="0" x2="${fontSize * 0.25}" y2="0" 
-              stroke="rgba(147,197,253,0.8)" 
-              stroke-width="2" 
-              stroke-linecap="round" />
-      </g>
-      
-      <!-- Timestamp text -->
-      <text x="${boxX + padding + fontSize * 1.5}" y="${boxY + boxHeight / 2 + fontSize * 0.35}" 
-            font-family="'Roboto Mono', 'Courier New', monospace" 
+            fill="rgba(0,0,0,0.85)" />
+      <text x="${boxX + padding}" y="${boxY + boxHeight / 2 + fontSize * 0.35}" 
+            font-family="'Courier New', monospace" 
             font-size="${fontSize}" 
-            font-weight="600"
             fill="white">${timestamp}</text>
     </svg>
   `;
   svgOverlays.push(timestampSvg);
 
-  // Enhanced Stickers with glow effects
+  // Simple Stickers
   for (const sticker of stickers) {
     const centerX = sticker.x + sticker.width / 2;
     const centerY = sticker.y + sticker.height / 2;
 
     if (sticker.type === "arrow") {
-      const lineWidth = Math.max(5, sticker.width / 18);
+      const lineWidth = Math.max(4, sticker.width / 20);
       const arrowSvg = `
         <svg width="${width}" height="${height}">
-          <defs>
-            <filter id="arrowGlow${sticker.id}" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
-              <feOffset dx="0" dy="0" result="offsetblur"/>
-              <feComponentTransfer>
-                <feFuncA type="linear" slope="0.8"/>
-              </feComponentTransfer>
-              <feMerge>
-                <feMergeNode/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-            <linearGradient id="arrowGradient${sticker.id}" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style="stop-color:rgb(251,191,36);stop-opacity:1" />
-              <stop offset="100%" style="stop-color:rgb(245,158,11);stop-opacity:1" />
-            </linearGradient>
-          </defs>
-          <g transform="translate(${centerX},${centerY}) rotate(${sticker.rotation}) translate(${-centerX},${-centerY})" 
-             filter="url(#arrowGlow${sticker.id})">
-            <!-- Arrow shaft with gradient -->
+          <g transform="translate(${centerX},${centerY}) rotate(${sticker.rotation}) translate(${-centerX},${-centerY})">
             <line x1="${sticker.x}" y1="${sticker.y + sticker.height / 2}" 
                   x2="${sticker.x + sticker.width * 0.7}" y2="${sticker.y + sticker.height / 2}" 
-                  stroke="url(#arrowGradient${sticker.id})" 
+                  stroke="rgb(255,200,0)" 
                   stroke-width="${lineWidth}" 
                   stroke-linecap="round" />
-            <!-- Arrow head -->
             <polygon points="${sticker.x + sticker.width},${sticker.y + sticker.height / 2} ${sticker.x + sticker.width * 0.7},${sticker.y + sticker.height * 0.2} ${sticker.x + sticker.width * 0.7},${sticker.y + sticker.height * 0.8}" 
-                     fill="url(#arrowGradient${sticker.id})" />
+                     fill="rgb(255,200,0)" />
           </g>
         </svg>
       `;
       svgOverlays.push(arrowSvg);
+    } else if (sticker.type === "arrow-3d") {
+      const lineWidth = Math.max(5, sticker.width / 18);
+      const arrow3dSvg = `
+        <svg width="${width}" height="${height}">
+          <g transform="translate(${centerX},${centerY}) rotate(${sticker.rotation}) translate(${-centerX},${-centerY})">
+            <defs>
+              <linearGradient id="arrow3d${sticker.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:rgb(255,200,0);stop-opacity:1" />
+                <stop offset="50%" style="stop-color:rgb(255,150,0);stop-opacity:1" />
+                <stop offset="100%" style="stop-color:rgb(200,100,0);stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <line x1="${sticker.x}" y1="${sticker.y + sticker.height / 2}" 
+                  x2="${sticker.x + sticker.width * 0.65}" y2="${sticker.y + sticker.height / 2}" 
+                  stroke="url(#arrow3d${sticker.id})" 
+                  stroke-width="${lineWidth * 1.2}" 
+                  stroke-linecap="round" />
+            <polygon points="${sticker.x + sticker.width},${sticker.y + sticker.height / 2} ${sticker.x + sticker.width * 0.65},${sticker.y + sticker.height * 0.15} ${sticker.x + sticker.width * 0.65},${sticker.y + sticker.height * 0.85}" 
+                     fill="url(#arrow3d${sticker.id})" />
+          </g>
+        </svg>
+      `;
+      svgOverlays.push(arrow3dSvg);
     } else if (sticker.type === "circle") {
-      const lineWidth = Math.max(5, sticker.width / 13);
+      const lineWidth = Math.max(4, sticker.width / 15);
       const circleSvg = `
         <svg width="${width}" height="${height}">
-          <defs>
-            <filter id="circleGlow${sticker.id}" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
-              <feOffset dx="0" dy="0" result="offsetblur"/>
-              <feComponentTransfer>
-                <feFuncA type="linear" slope="0.8"/>
-              </feComponentTransfer>
-              <feMerge>
-                <feMergeNode/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-            <linearGradient id="circleGradient${sticker.id}" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color:rgb(239,68,68);stop-opacity:1" />
-              <stop offset="100%" style="stop-color:rgb(220,38,38);stop-opacity:1" />
-            </linearGradient>
-          </defs>
-          <g transform="translate(${centerX},${centerY}) rotate(${sticker.rotation}) translate(${-centerX},${-centerY})" 
-             filter="url(#circleGlow${sticker.id})">
+          <g transform="translate(${centerX},${centerY}) rotate(${sticker.rotation}) translate(${-centerX},${-centerY})">
             <ellipse cx="${sticker.x + sticker.width / 2}" cy="${sticker.y + sticker.height / 2}" 
                      rx="${sticker.width / 2}" ry="${sticker.height / 2}" 
                      fill="none" 
-                     stroke="url(#circleGradient${sticker.id})" 
+                     stroke="rgb(255,50,50)" 
                      stroke-width="${lineWidth}" />
           </g>
         </svg>
       `;
       svgOverlays.push(circleSvg);
+    } else if (sticker.type === "circle-filled") {
+      const circleSvg = `
+        <svg width="${width}" height="${height}">
+          <g transform="translate(${centerX},${centerY}) rotate(${sticker.rotation}) translate(${-centerX},${-centerY})">
+            <ellipse cx="${sticker.x + sticker.width / 2}" cy="${sticker.y + sticker.height / 2}" 
+                     rx="${sticker.width / 2}" ry="${sticker.height / 2}" 
+                     fill="rgba(255,50,50,0.4)" 
+                     stroke="rgb(255,50,50)" 
+                     stroke-width="3" />
+          </g>
+        </svg>
+      `;
+      svgOverlays.push(circleSvg);
+    } else if (sticker.type === "crosshair") {
+      const lineWidth = Math.max(3, sticker.width / 25);
+      const crosshairSvg = `
+        <svg width="${width}" height="${height}">
+          <g transform="translate(${centerX},${centerY}) rotate(${sticker.rotation}) translate(${-centerX},${-centerY})">
+            <circle cx="${centerX}" cy="${centerY}" r="${sticker.width / 2}" 
+                    fill="none" stroke="rgb(0,255,100)" stroke-width="${lineWidth}" />
+            <line x1="${centerX}" y1="${centerY - sticker.height / 2}" 
+                  x2="${centerX}" y2="${centerY + sticker.height / 2}" 
+                  stroke="rgb(0,255,100)" stroke-width="${lineWidth}" />
+            <line x1="${centerX - sticker.width / 2}" y1="${centerY}" 
+                  x2="${centerX + sticker.width / 2}" y2="${centerY}" 
+                  stroke="rgb(0,255,100)" stroke-width="${lineWidth}" />
+            <circle cx="${centerX}" cy="${centerY}" r="${sticker.width / 8}" 
+                    fill="none" stroke="rgb(0,255,100)" stroke-width="${lineWidth}" />
+          </g>
+        </svg>
+      `;
+      svgOverlays.push(crosshairSvg);
     }
   }
 

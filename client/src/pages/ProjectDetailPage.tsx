@@ -100,7 +100,7 @@ export default function ProjectDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {photos.map((photo) => (
             <Card key={photo.id} className="overflow-hidden" data-testid={`card-photo-${photo.id}`}>
-              <div className="relative aspect-video bg-muted">
+              <div className="relative aspect-[9/16] bg-muted">
                 <img
                   src={`/api/photos/${photo.id}/file`}
                   alt={photo.comment || "Photo"}
