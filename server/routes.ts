@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProjectSchema, insertPhotoSchema, type Sticker } from "@shared/schema";
@@ -6,6 +6,11 @@ import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
 import sharp from "sharp";
+
+// Extend Express Request type for multer
+interface MulterRequest extends Request {
+  file?: Express.Multer.File;
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -396,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Photos endpoints
-  app.post("/api/photos", upload.single("photo"), async (req, res) => {
+  app.post("/api/photos", upload.single("photo"), async (req: MulterRequest, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No photo file provided" });
