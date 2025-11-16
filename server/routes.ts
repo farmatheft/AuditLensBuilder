@@ -357,12 +357,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/projects", async (req, res) => {
     try {
+      console.log("Received project data:", req.body);
       const validatedData = insertProjectSchema.parse(req.body);
+      console.log("Validated project data:", validatedData);
       const project = await storage.createProject(validatedData);
       res.status(201).json(project);
     } catch (error) {
       console.error("Error creating project:", error);
-      res.status(400).json({ error: "Failed to create project" });
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      res.status(400).json({ 
+        error: "Failed to create project",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
