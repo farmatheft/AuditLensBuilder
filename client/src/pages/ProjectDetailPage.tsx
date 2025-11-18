@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [touchedCard, setTouchedCard] = useState<string | null>(null);
 
   const { data: project, isLoading: projectLoading } = useQuery<Project>({
     queryKey: ["/api/projects", id],
@@ -97,9 +99,23 @@ export default function ProjectDetailPage() {
       </div>
 
       {hasPhotos ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
           {photos.map((photo) => (
-            <Card key={photo.id} className="overflow-hidden" data-testid={`card-photo-${photo.id}`}>
+            <Card 
+              key={photo.id} 
+              className="group overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
+              data-testid={`card-photo-${photo.id}`}
+              onClick={() => {
+                if (touchedCard === photo.id) {
+                  window.open(`/api/photos/${photo.id}/file`, '_blank');
+                  setTouchedCard(null);
+                } else {
+                  setTouchedCard(photo.id);
+                  setTimeout(() => setTouchedCard(null), 3000);
+                }
+              }}
+              style={{ width: '145px' }}
+            >
               <div className="relative aspect-[9/16] bg-muted">
                 <img
                   src={`/api/photos/${photo.id}/file`}
@@ -107,38 +123,46 @@ export default function ProjectDetailPage() {
                   className="w-full h-full object-cover"
                   data-testid={`img-photo-${photo.id}`}
                 />
+                
+                {/* Info overlay - показується на hover або touch */}
+                <div className={`absolute inset-0 bg-black/80 transition-opacity duration-300 p-2 flex flex-col justify-between text-white text-xs overflow-hidden ${
+                  touchedCard === photo.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}>
+                  <div className="space-y-1">
+                    {photo.comment && (
+                      <p className="font-medium line-clamp-3">{photo.comment}</p>
+                    )}
+                    {photo.latitude && photo.longitude && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 flex-shrink-0" />
+                        <span className="font-mono text-[10px]" data-testid={`text-location-${photo.id}`}>
+                          {photo.latitude.toFixed(4)}, {photo.longitude.toFixed(4)}
+                        </span>
+                      </div>
+                    )}
+                    {photo.stickers && Array.isArray(photo.stickers) && photo.stickers.length > 0 && (
+                      <p className="text-[10px]">{photo.stickers.length} sticker{photo.stickers.length !== 1 ? "s" : ""}</p>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-white/70">
+                    {formatDistanceToNow(new Date(photo.createdAt), { addSuffix: true })}
+                  </p>
+                </div>
+
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="absolute top-2 right-2"
-                  onClick={() => deleteMutation.mutate(photo.id)}
+                  className="absolute top-1 right-1 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteMutation.mutate(photo.id);
+                  }}
                   disabled={deleteMutation.isPending}
                   data-testid={`button-delete-photo-${photo.id}`}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3 h-3" />
                 </Button>
               </div>
-              <CardContent className="p-4 space-y-2">
-                {photo.comment && (
-                  <p className="text-sm font-medium line-clamp-2">{photo.comment}</p>
-                )}
-                {photo.latitude && photo.longitude && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <MapPin className="w-3 h-3" />
-                    <span className="font-mono" data-testid={`text-location-${photo.id}`}>
-                      {photo.latitude.toFixed(5)}, {photo.longitude.toFixed(5)}
-                    </span>
-                  </div>
-                )}
-                {photo.stickers && Array.isArray(photo.stickers) && photo.stickers.length > 0 && (
-                  <Badge variant="secondary" className="text-xs">
-                    {photo.stickers.length} sticker{photo.stickers.length !== 1 ? "s" : ""}
-                  </Badge>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(photo.createdAt), { addSuffix: true })}
-                </p>
-              </CardContent>
             </Card>
           ))}
         </div>

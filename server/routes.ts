@@ -33,7 +33,9 @@ async function compositeImageWithOverlays(
   commentPosition: "top" | "bottom",
   stickers: Sticker[],
   latitude: number | null,
-  longitude: number | null
+  longitude: number | null,
+  projectName: string,
+  capturedAt: string
 ): Promise<Buffer> {
   const image = sharp(imageBuffer);
   const metadata = await image.metadata();
@@ -42,55 +44,15 @@ async function compositeImageWithOverlays(
 
   const svgOverlays: string[] = [];
 
-  // Unified box height and font size
+  // Unified font size and fixed height
   const fontSize = Math.max(16, height / 60);
-  const padding = fontSize * 0.6;
-  const boxHeight = fontSize * 2.2;
+  const boxHeight = fontSize * 2.5;
 
-  // Simple Comment Overlay
-  if (comment) {
-    const y = commentPosition === "top" ? padding : height - boxHeight - padding;
-    
-    const escapedComment = comment
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-
-    const commentSvg = `
-      <svg width="${width}" height="${height}">
-        <rect x="0" y="${y}" width="${width}" height="${boxHeight}" 
-              fill="rgba(0,0,0,0.85)" />
-        <text x="${padding}" y="${y + boxHeight / 2 + fontSize * 0.35}" 
-              font-family="'Courier New', monospace" 
-              font-size="${fontSize}" 
-              fill="white">${escapedComment}</text>
-      </svg>
-    `;
-    svgOverlays.push(commentSvg);
-  }
-
-  // Simple Location Overlay - Bottom Left
-  if (latitude !== null && longitude !== null) {
-    const boxWidth = Math.min(width * 0.5, 400);
-    const boxX = padding;
-    const boxY = height - boxHeight - padding;
-
-    const locationSvg = `
-      <svg width="${width}" height="${height}">
-        <rect x="${boxX}" y="${boxY}" width="${boxWidth}" height="${boxHeight}" 
-              fill="rgba(0,0,0,0.85)" />
-        <text x="${boxX + padding}" y="${boxY + boxHeight / 2 + fontSize * 0.35}" 
-              font-family="'Courier New', monospace" 
-              font-size="${fontSize}" 
-              fill="white">LOC: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}</text>
-      </svg>
-    `;
-    svgOverlays.push(locationSvg);
-  }
-
-  // Simple Timestamp Overlay - Bottom Right
-  const timestamp = new Date().toLocaleString('en-US', {
+  // Calculate positions from bottom
+  let currentY = height;
+  
+  // Timestamp Overlay - Bottom, right aligned (use captured timestamp)
+  const timestamp = new Date(capturedAt).toLocaleString('en-CA', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -98,23 +60,71 @@ async function compositeImageWithOverlays(
     minute: '2-digit',
     second: '2-digit',
     hour12: false
-  });
+  }).replace(',', '');
   
-  const boxWidth = fontSize * 11;
-  const boxX = width - boxWidth - padding;
-  const boxY = height - boxHeight - padding;
-
+  currentY -= boxHeight;
   const timestampSvg = `
     <svg width="${width}" height="${height}">
-      <rect x="${boxX}" y="${boxY}" width="${boxWidth}" height="${boxHeight}" 
-            fill="rgba(0,0,0,0.85)" />
-      <text x="${boxX + padding}" y="${boxY + boxHeight / 2 + fontSize * 0.35}" 
+      <rect x="0" y="${currentY}" width="${width}" height="${boxHeight}" 
+            fill="rgba(0,0,0,1)" />
+      <text x="${width - fontSize * 0.8}" y="${currentY + boxHeight / 2 + fontSize * 0.35}" 
             font-family="'Courier New', monospace" 
             font-size="${fontSize}" 
-            fill="white">${timestamp}</text>
+            fill="white"
+            text-anchor="end">${timestamp}</text>
     </svg>
   `;
   svgOverlays.push(timestampSvg);
+
+  // Comment Overlay - Above timestamp
+  if (comment || projectName) {
+    const escapedProjectName = projectName
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+    
+    const escapedComment = comment
+      ? comment
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+      : "custom comment";
+
+    currentY -= boxHeight;
+    const commentSvg = `
+      <svg width="${width}" height="${height}">
+        <rect x="0" y="${currentY}" width="${width}" height="${boxHeight}" 
+              fill="rgba(0,0,0,1)" />
+        <text x="${fontSize * 0.8}" y="${currentY + boxHeight / 2 + fontSize * 0.35}" 
+              font-family="'Courier New', monospace" 
+              font-size="${fontSize}" 
+              fill="white">
+          <tspan font-weight="bold">${escapedProjectName}</tspan><tspan> - ${escapedComment}</tspan>
+        </text>
+      </svg>
+    `;
+    svgOverlays.push(commentSvg);
+  }
+
+  // Location Overlay - Above comment
+  if (latitude !== null && longitude !== null) {
+    currentY -= boxHeight;
+    const locationSvg = `
+      <svg width="${width}" height="${height}">
+        <rect x="0" y="${currentY}" width="${width}" height="${boxHeight}" 
+              fill="rgba(0,0,0,1)" />
+        <text x="${fontSize * 0.8}" y="${currentY + boxHeight / 2 + fontSize * 0.35}" 
+              font-family="'Courier New', monospace" 
+              font-size="${fontSize}" 
+              fill="white">${latitude.toFixed(4)},${longitude.toFixed(4)}</text>
+      </svg>
+    `;
+    svgOverlays.push(locationSvg);
+  }
+
+
 
   // Simple Stickers
   for (const sticker of stickers) {
@@ -315,6 +325,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stickers = req.body.stickers ? JSON.parse(req.body.stickers) : [];
       const latitude = req.body.latitude ? parseFloat(req.body.latitude) : null;
       const longitude = req.body.longitude ? parseFloat(req.body.longitude) : null;
+      const projectId = req.body.projectId;
+      const capturedAt = req.body.capturedAt || new Date().toISOString();
+
+      // Get project name for comment
+      let projectName = "";
+      if (projectId) {
+        const project = await storage.getProject(projectId);
+        if (project) {
+          projectName = project.name;
+        }
+      }
 
       const filename = `photo-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
       const filepath = path.join(PHOTOS_DIR, filename);
@@ -325,7 +346,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         commentPosition as "top" | "bottom",
         stickers,
         latitude,
-        longitude
+        longitude,
+        projectName,
+        capturedAt
       );
 
       await fs.writeFile(filepath, compositedImage);

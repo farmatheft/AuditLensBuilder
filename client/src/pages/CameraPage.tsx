@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { CameraCapture } from "@/components/CameraCapture";
 import { PhotoEditor } from "@/components/PhotoEditor";
 import { useToast } from "@/hooks/use-toast";
-import type { Geolocation } from "@shared/schema";
+import type { Geolocation, Project } from "@shared/schema";
 
 interface CameraPageProps {
   projectId: string;
@@ -14,12 +15,19 @@ export default function CameraPage({ projectId }: CameraPageProps) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [capturedLocation, setCapturedLocation] = useState<Geolocation | null>(null);
   const [comment, setComment] = useState("");
+  const [capturedAt, setCapturedAt] = useState<string>("");
   const { toast } = useToast();
 
-  const handleCapture = (imageData: string, location: Geolocation | null, commentText: string) => {
+  const { data: project } = useQuery<Project>({
+    queryKey: ["/api/projects", projectId],
+    enabled: !!projectId,
+  });
+
+  const handleCapture = (imageData: string, location: Geolocation | null, commentText: string, timestamp: string) => {
     setCapturedImage(imageData);
     setCapturedLocation(location);
     setComment(commentText);
+    setCapturedAt(timestamp);
   };
 
   const handleUploadComplete = () => {
@@ -29,6 +37,8 @@ export default function CameraPage({ projectId }: CameraPageProps) {
     });
     setCapturedImage(null);
     setCapturedLocation(null);
+    setComment("");
+    setCapturedAt("");
   };
 
   const handleCancel = () => {
@@ -43,6 +53,8 @@ export default function CameraPage({ projectId }: CameraPageProps) {
         location={capturedLocation}
         comment={comment}
         projectId={projectId}
+        projectName={project?.name || ""}
+        capturedAt={capturedAt}
         onUploadComplete={handleUploadComplete}
         onCancel={handleCancel}
       />
@@ -54,6 +66,7 @@ export default function CameraPage({ projectId }: CameraPageProps) {
       onCapture={handleCapture}
       comment={comment}
       onCommentChange={setComment}
+      projectName={project?.name || ""}
     />
   );
 }

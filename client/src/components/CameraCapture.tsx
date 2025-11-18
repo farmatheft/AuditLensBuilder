@@ -6,12 +6,13 @@ import { Card } from "@/components/ui/card";
 import type { Geolocation } from "@shared/schema";
 
 interface CameraCaptureProps {
-  onCapture: (imageData: string, location: Geolocation | null, comment: string) => void;
+  onCapture: (imageData: string, location: Geolocation | null, comment: string, capturedAt: string) => void;
   comment: string;
   onCommentChange: (comment: string) => void;
+  projectName: string;
 }
 
-export function CameraCapture({ onCapture, comment, onCommentChange }: CameraCaptureProps) {
+export function CameraCapture({ onCapture, comment, onCommentChange, projectName }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -35,10 +36,11 @@ export function CameraCapture({ onCapture, comment, onCommentChange }: CameraCap
         if (mounted && videoRef.current) {
           videoRef.current.srcObject = mediaStream;
           setStream(mediaStream);
+          setCameraError("");
         }
       } catch (err) {
         console.error("Camera access error:", err);
-        setCameraError("Unable to access camera. Please grant camera permissions.");
+        setCameraError("Camera not available");
       }
     };
 
@@ -97,7 +99,8 @@ export function CameraCapture({ onCapture, comment, onCommentChange }: CameraCap
     if (ctx) {
       ctx.drawImage(videoRef.current, 0, 0);
       const imageData = canvas.toDataURL("image/jpeg", 0.95);
-      onCapture(imageData, location, comment);
+      const capturedAt = new Date().toISOString();
+      onCapture(imageData, location, comment, capturedAt);
     }
 
     setTimeout(() => setIsCapturing(false), 300);
@@ -116,7 +119,8 @@ export function CameraCapture({ onCapture, comment, onCommentChange }: CameraCap
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageData = e.target?.result as string;
-        onCapture(imageData, location, comment);
+        const capturedAt = new Date().toISOString();
+        onCapture(imageData, location, comment, capturedAt);
       };
       reader.readAsDataURL(file);
     };
@@ -149,21 +153,19 @@ export function CameraCapture({ onCapture, comment, onCommentChange }: CameraCap
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-slate-950 via-blue-950 to-black safe-area-inset overflow-hidden">
-      {/* Animated Background Pattern */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
-      </div>
-
-      {cameraError ? (
-        <Card className="m-4 p-6 bg-gradient-to-br from-red-950/90 to-red-900/90 backdrop-blur-xl border-red-500/30 shadow-2xl">
-          <p className="text-red-200 text-center font-semibold">{cameraError}</p>
-        </Card>
-      ) : (
-        <>
-          {/* Camera/Video Preview */}
-          <div className="relative flex-1 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col bg-black safe-area-inset overflow-hidden">
+      {/* Camera/Video Preview - Fixed size */}
+      <div className="relative flex-1 overflow-hidden flex items-center justify-center bg-black">
+        <div className="relative w-full max-w-[414px] h-full max-h-[736px] bg-black">
+          {cameraError ? (
+            <div className="absolute inset-0 bg-black flex items-center justify-center">
+              <div className="text-center p-6">
+                <Camera className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 text-sm">{cameraError}</p>
+                <p className="text-gray-500 text-xs mt-2">You can still upload from gallery</p>
+              </div>
+            </div>
+          ) : (
             <video
               ref={videoRef}
               autoPlay
@@ -172,112 +174,97 @@ export function CameraCapture({ onCapture, comment, onCommentChange }: CameraCap
               className="absolute inset-0 w-full h-full object-cover"
               data-testid="video-camera-preview"
             />
-            
-            {/* Vignette Effect */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none"></div>
+          )}
+        </div>
+      </div>
 
-            {/* Location Overlay - Bottom Left with Premium Design */}
-            <div className="absolute bottom-6 left-4 right-4 sm:right-auto sm:max-w-md">
-              <div className="relative group">
-                {/* Glow Effect */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl blur-lg opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                
-                {/* Main Card */}
-                <div className="relative flex items-start gap-3 bg-gradient-to-br from-black/95 via-gray-900/95 to-black/95 backdrop-blur-2xl rounded-3xl p-5 shadow-2xl border border-white/10 hover:border-emerald-400/30 transition-all duration-300">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-emerald-400 rounded-full blur-md opacity-50 animate-[glow-pulse_2s_ease-in-out_infinite]"></div>
-                    <MapPin className="relative w-9 h-9 text-emerald-400 flex-shrink-0 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                  </div>
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-xs font-semibold text-emerald-400 mb-1 tracking-wider uppercase">Location</span>
-                    {location ? (
-                      <span className="text-lg sm:text-xl font-mono font-bold text-white leading-tight break-all" data-testid="text-location">
-                        {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
-                      </span>
-                    ) : locationError ? (
-                      <span className="text-sm text-red-400 font-medium">{locationError}</span>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
-                        <span className="text-sm text-white/90 font-medium">Acquiring GPS...</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+      {/* Location Bar - Full width of video */}
+      <div className="flex justify-center bg-black">
+        <div className="w-full max-w-[414px] bg-black text-white px-4 py-3">
+          {location ? (
+            <div className="text-lg font-mono" data-testid="text-location">
+              {location.latitude.toFixed(4)},{location.longitude.toFixed(4)}
             </div>
+          ) : locationError ? (
+            <div className="text-sm text-gray-400">{locationError}</div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Acquiring GPS...</span>
+            </div>
+          )}
+        </div>
+      </div>
 
-            {/* Top Status Bar */}
-            <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent p-4 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
-                  <span className="text-white/90 text-sm font-semibold">LIVE</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5">
-                  <Camera className="w-4 h-4 text-white/80" />
-                  <span className="text-white/80 text-xs font-medium">HD</span>
-                </div>
-              </div>
-            </div>
+      {/* Comment Input Section */}
+      <div className="flex justify-center bg-black">
+        <div className="w-full max-w-[414px] px-4 py-3">
+          <input
+            type="text"
+            value={comment}
+            onChange={(e) => onCommentChange(e.target.value)}
+            placeholder="Enter comment..."
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg text-white text-base px-4 py-3 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-600"
+            data-testid="input-comment"
+          />
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-center bg-black pb-6">
+        <div className="w-full max-w-[414px] px-4 flex justify-between items-center">
+          {/* Back Button - Left */}
+          <Button
+            variant="ghost"
+            onClick={() => window.history.back()}
+            className="text-white hover:bg-gray-900"
+            data-testid="button-back"
+          >
+            Back
+          </Button>
+
+          {/* Center Buttons */}
+          <div className="flex items-center gap-4">
+            {/* Capture Button - Center */}
+            <Button
+              size="icon"
+              onClick={handleCaptureAttempt}
+              disabled={isCapturing || !!cameraError}
+              className="w-20 h-20 rounded-full bg-white hover:bg-gray-100 active:scale-90 transition-all disabled:opacity-50 disabled:bg-gray-400"
+              data-testid="button-capture"
+            >
+              <Camera className="w-10 h-10 text-gray-900" />
+            </Button>
+
+            {/* Upload Button - Right of center */}
+            <Button
+              size="icon"
+              onClick={handleUploadClick}
+              className="w-14 h-14 rounded-full bg-gray-700 hover:bg-gray-600 active:scale-90 transition-all"
+              data-testid="button-upload"
+            >
+              <Upload className="w-6 h-6 text-white" />
+            </Button>
           </div>
 
-          {/* Comment Input Section */}
-          <div className="relative p-4 sm:p-6 bg-gradient-to-t from-black via-gray-950/98 to-gray-900/95 backdrop-blur-2xl border-t border-white/10">
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 focus-within:opacity-100 transition-opacity duration-300"></div>
-              <Textarea
-                value={comment}
-                onChange={(e) => onCommentChange(e.target.value)}
-                placeholder="✨ Add your thoughts here..."
-                className="relative w-full min-h-[80px] sm:min-h-[70px] bg-white/5 border-white/10 text-white text-base sm:text-lg placeholder:text-white/40 focus-visible:ring-2 focus-visible:ring-emerald-400/50 focus-visible:border-emerald-400/50 focus-visible:bg-white/10 resize-none rounded-2xl transition-all duration-300 shadow-inner"
-                data-testid="input-comment"
-              />
-            </div>
-          </div>
+          {/* Publish Button - Right */}
+          <Button
+            variant="ghost"
+            className="text-white hover:bg-gray-900 invisible"
+          >
+            Publish
+          </Button>
 
-          {/* Action Buttons with Premium Design */}
-          <div className="relative p-4 sm:p-6 pt-2 bg-black/98 backdrop-blur-2xl flex justify-center items-center gap-6 sm:gap-8 pb-safe">
-            {/* Upload Button */}
-            <div className="relative group">
-              <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-300"></div>
-              <Button
-                size="icon"
-                onClick={handleUploadClick}
-                className="relative w-16 h-16 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-600 hover:from-blue-600 hover:via-blue-700 hover:to-cyan-700 active:scale-90 border-2 border-blue-400/50 shadow-2xl shadow-blue-500/40 transition-all duration-300 hover:shadow-blue-500/60"
-                data-testid="button-upload"
-              >
-                <Upload className="w-7 h-7 sm:w-6 sm:h-6 text-white drop-shadow-lg" />
-              </Button>
-            </div>
-
-            {/* Capture Button - Hero Element */}
-            <div className="relative">
-              <div className="absolute -inset-3 bg-gradient-to-r from-white via-blue-200 to-white rounded-full blur-2xl opacity-40 animate-[pulse-glow_2s_ease-in-out_infinite]"></div>
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full opacity-75"></div>
-              <Button
-                size="icon"
-                onClick={handleCaptureAttempt}
-                disabled={isCapturing}
-                className="relative w-24 h-24 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-white via-gray-50 to-gray-100 hover:from-gray-50 hover:via-white hover:to-gray-50 active:scale-90 border-4 border-white shadow-2xl shadow-white/30 transition-all duration-300 disabled:opacity-50 disabled:scale-100 hover:shadow-white/50"
-                data-testid="button-capture"
-              >
-                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20"></div>
-                <Camera className="relative w-12 h-12 sm:w-10 sm:h-10 text-gray-900 drop-shadow-md" />
-              </Button>
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="hidden"
-              data-testid="input-file"
-            />
-          </div>
-        </>
-      )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+            data-testid="input-file"
+          />
+        </div>
+      </div>
 
       {/* Premium Comment Warning Modal */}
       {showCommentWarning && (

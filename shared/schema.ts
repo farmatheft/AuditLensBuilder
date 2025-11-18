@@ -77,6 +77,7 @@ export const insertPhotoSchema = createInsertSchema(photos).omit({
     height: z.number(),
     rotation: z.number(),
   })).optional(),
+  capturedAt: z.string().optional(),
 });
 
 export const insertApiKeySchema = createInsertSchema(apiKeys).omit({

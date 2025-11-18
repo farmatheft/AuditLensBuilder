@@ -12,6 +12,8 @@ interface PhotoEditorProps {
   location: Geolocation | null;
   comment: string;
   projectId: string;
+  projectName: string;
+  capturedAt: string;
   onUploadComplete: () => void;
   onCancel: () => void;
 }
@@ -21,6 +23,8 @@ export function PhotoEditor({
   location,
   comment,
   projectId,
+  projectName,
+  capturedAt,
   onUploadComplete,
   onCancel,
 }: PhotoEditorProps) {
@@ -35,7 +39,6 @@ export function PhotoEditor({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [uploadTimestamp] = useState(new Date());
 
   useEffect(() => {
     const img = new Image();
@@ -369,6 +372,7 @@ export function PhotoEditor({
       formData.append("projectId", projectId);
       formData.append("comment", comment);
       formData.append("commentPosition", commentPosition);
+      formData.append("capturedAt", capturedAt);
       if (location) {
         formData.append("latitude", location.latitude.toString());
         formData.append("longitude", location.longitude.toString());
@@ -404,228 +408,148 @@ export function PhotoEditor({
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-slate-950 via-indigo-950 to-black safe-area-inset overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(99,102,241,0.15),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(168,85,247,0.15),transparent_50%)]"></div>
-      </div>
-
-      {/* Header */}
-      <div className="relative flex items-center justify-between p-3 sm:p-4 border-b border-white/10 bg-black/40 backdrop-blur-2xl shrink-0 shadow-2xl z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </div>
-          <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Edit Photo
-          </h2>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onCancel} 
-            data-testid="button-cancel"
-            className="rounded-xl font-bold bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300"
-          >
-            Cancel
-          </Button>
-          <div className="relative">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur opacity-50"></div>
-            <Button 
-              onClick={handleUpload} 
-              disabled={isUploading} 
-              size="sm" 
-              data-testid="button-upload"
-              className="relative rounded-xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-purple-700 hover:from-blue-700 hover:via-blue-800 hover:to-purple-800 shadow-lg shadow-blue-500/40 transition-all duration-300"
-            >
-              {isUploading ? (
-                <span className="flex items-center gap-2">
-                  <Upload className="w-4 h-4 animate-pulse" />
-                  <span className="hidden sm:inline">Uploading...</span>
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Upload className="w-4 h-4" />
-                  <span className="hidden sm:inline">Upload</span>
-                </span>
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
-
+    <div className="fixed inset-0 flex flex-col bg-black safe-area-inset overflow-hidden">
       {isUploading && (
-        <div className="relative px-3 sm:px-4 pt-3 pb-2 shrink-0 bg-black/20 backdrop-blur-sm z-10">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-md opacity-30"></div>
-            <Progress value={uploadProgress} className="relative w-full h-3 bg-white/10" data-testid="progress-upload" />
-          </div>
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-sm text-white/80 font-semibold">Uploading your masterpiece...</p>
-            <p className="text-sm font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{uploadProgress}%</p>
+        <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center">
+          <div className="text-center">
+            <Progress value={uploadProgress} className="w-64 h-2 bg-gray-800 mb-4" data-testid="progress-upload" />
+            <p className="text-white text-lg">{uploadProgress}%</p>
           </div>
         </div>
       )}
 
-      {/* Canvas Area */}
-      <div className="relative flex-1 overflow-auto p-2 sm:p-4 z-10">
-        <div ref={containerRef} className="max-w-4xl mx-auto">
-          <div className="relative group">
-            {/* Glow Effect */}
-            <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
-            
-            {/* Canvas Container */}
-            <div className="relative bg-gradient-to-br from-white/5 to-white/10 p-1 rounded-3xl backdrop-blur-sm border border-white/20">
-              <canvas
-                ref={canvasRef}
-                onClick={handleCanvasClick}
-                onMouseDown={handleCanvasMouseDown}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseUp={handleCanvasMouseUp}
-                onMouseLeave={handleCanvasMouseUp}
-                onTouchStart={(e) => {
-                  const touch = e.touches[0];
-                  const mouseEvent = new MouseEvent('mousedown', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY,
-                  });
-                  handleCanvasMouseDown(mouseEvent as any);
-                }}
-                onTouchMove={(e) => {
-                  const touch = e.touches[0];
-                  const mouseEvent = new MouseEvent('mousemove', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY,
-                  });
-                  handleCanvasMouseMove(mouseEvent as any);
-                }}
-                onTouchEnd={() => handleCanvasMouseUp()}
-                className="w-full rounded-2xl cursor-crosshair shadow-2xl touch-none bg-white"
-                data-testid="canvas-editor"
-              />
+      {/* Canvas Area - Fixed size with overlay buttons */}
+      <div className="relative flex-1 overflow-hidden flex items-center justify-center bg-black">
+        <div ref={containerRef} className="relative w-full max-w-[414px] h-full max-h-[736px]">
+          {/* Cancel Button - Top Left */}
+          <Button
+            size="icon"
+            onClick={onCancel}
+            className="absolute top-4 left-4 z-10 w-12 h-12 rounded-full bg-black/80 hover:bg-black border-2 border-red-500"
+            data-testid="button-cancel"
+          >
+            <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </Button>
+
+          {/* Add Sticker Button - Bottom Left */}
+          <Button
+            size="icon"
+            onClick={() => {
+              const newSticker: Sticker = {
+                id: `sticker-${Date.now()}`,
+                type: "circle-filled",
+                x: 150,
+                y: 300,
+                width: 100,
+                height: 100,
+                rotation: 0,
+              };
+              setStickers([...stickers, newSticker]);
+              setSelectedSticker(newSticker.id);
+            }}
+            className="absolute bottom-4 left-4 z-10 w-12 h-12 rounded-full bg-yellow-400 hover:bg-yellow-500"
+            data-testid="button-add-sticker"
+          >
+            <svg className="w-6 h-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+            </svg>
+          </Button>
+
+          <canvas
+            ref={canvasRef}
+            onClick={handleCanvasClick}
+            onMouseDown={handleCanvasMouseDown}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseUp={handleCanvasMouseUp}
+            onMouseLeave={handleCanvasMouseUp}
+            onTouchStart={(e) => {
+              const touch = e.touches[0];
+              const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+              });
+              handleCanvasMouseDown(mouseEvent as any);
+            }}
+            onTouchMove={(e) => {
+              const touch = e.touches[0];
+              const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+              });
+              handleCanvasMouseMove(mouseEvent as any);
+            }}
+            onTouchEnd={() => handleCanvasMouseUp()}
+            className="w-full h-full cursor-crosshair touch-none bg-white"
+            data-testid="canvas-editor"
+          />
+        </div>
+      </div>
+
+      {/* Location Bar */}
+      <div className="flex justify-center bg-black">
+        <div className="w-full max-w-[414px] bg-black text-white px-4 py-3">
+          {location ? (
+            <div className="text-lg font-mono" data-testid="text-location">
+              {location.latitude.toFixed(4)},{location.longitude.toFixed(4)}
             </div>
+          ) : (
+            <div className="text-sm text-gray-400">No location</div>
+          )}
+        </div>
+      </div>
+
+      {/* Comment Bar */}
+      <div className="flex justify-center bg-black">
+        <div className="w-full max-w-[414px] bg-black text-white px-4 py-3">
+          <div className="text-base">
+            <span className="font-bold">{projectName}</span> - {comment || "custom comment"}
           </div>
         </div>
       </div>
 
-      {/* Controls */}
-      <Card className="relative m-2 sm:m-4 p-4 sm:p-5 space-y-4 shrink-0 max-h-[40vh] overflow-y-auto rounded-3xl shadow-2xl border border-white/20 bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-2xl z-10">
-        <div>
-          <Label className="text-sm font-bold mb-3 block text-white/90 tracking-wide uppercase">Add Annotations</Label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            <Button
-              variant={placingSticker === "arrow" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPlacingSticker("arrow")}
-              data-testid="button-add-arrow"
-              className="rounded-lg font-bold h-10 bg-amber-500/20 border-amber-500/30 hover:bg-amber-500/30 text-white text-xs"
-            >
-              <ArrowRight className="w-4 h-4 mr-1" />
-              Arrow
-            </Button>
-            <Button
-              variant={placingSticker === "arrow-3d" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPlacingSticker("arrow-3d")}
-              data-testid="button-add-arrow-3d"
-              className="rounded-lg font-bold h-10 bg-orange-500/20 border-orange-500/30 hover:bg-orange-500/30 text-white text-xs"
-            >
-              <ArrowRight className="w-4 h-4 mr-1" />
-              3D Arrow
-            </Button>
-            <Button
-              variant={placingSticker === "circle" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPlacingSticker("circle")}
-              data-testid="button-add-circle"
-              className="rounded-lg font-bold h-10 bg-red-500/20 border-red-500/30 hover:bg-red-500/30 text-white text-xs"
-            >
-              <Circle className="w-4 h-4 mr-1" />
-              Circle
-            </Button>
-            <Button
-              variant={placingSticker === "circle-filled" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPlacingSticker("circle-filled")}
-              data-testid="button-add-circle-filled"
-              className="rounded-lg font-bold h-10 bg-pink-500/20 border-pink-500/30 hover:bg-pink-500/30 text-white text-xs"
-            >
-              <Circle className="w-4 h-4 mr-1 fill-current" />
-              Filled
-            </Button>
-            <Button
-              variant={placingSticker === "crosshair" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPlacingSticker("crosshair")}
-              data-testid="button-add-crosshair"
-              className="rounded-lg font-bold h-10 bg-green-500/20 border-green-500/30 hover:bg-green-500/30 text-white text-xs"
-            >
-              <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="2" x2="12" y2="22" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-              </svg>
-              Target
-            </Button>
+      {/* Timestamp Bar */}
+      <div className="flex justify-center bg-black pb-4">
+        <div className="w-full max-w-[414px] bg-black text-white px-4 text-right">
+          <div className="text-sm font-mono">
+            {new Date(capturedAt).toLocaleString('en-CA', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            }).replace(',', '')}
           </div>
         </div>
+      </div>
 
-        {selectedSticker && (
-          <div className="animate-in slide-in-from-bottom duration-300">
-            <Label className="text-sm font-bold mb-3 block text-white/90 tracking-wide uppercase">Transform Selected</Label>
-            <div className="flex gap-3 flex-wrap">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={rotateSelected} 
-                data-testid="button-rotate" 
-                className="flex-1 sm:flex-none rounded-2xl font-bold h-12 bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 text-white transition-all duration-300"
-              >
-                <RotateCw className="w-5 h-5 sm:mr-2" />
-                <span className="hidden sm:inline">Rotate</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={resizeSelected} 
-                data-testid="button-resize" 
-                className="flex-1 sm:flex-none rounded-2xl font-bold h-12 bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20 text-white transition-all duration-300"
-              >
-                <Maximize2 className="w-5 h-5 sm:mr-2" />
-                <span className="hidden sm:inline">Resize</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={deleteSelected}
-                className="flex-1 sm:flex-none rounded-2xl font-bold h-12 bg-red-500/10 border-red-500/30 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all duration-300"
-                data-testid="button-delete-sticker"
-              >
-                <Trash2 className="w-5 h-5 sm:mr-2" />
-                <span className="hidden sm:inline">Delete</span>
-              </Button>
-            </div>
-          </div>
-        )}
+      {/* Action Buttons */}
+      <div className="flex justify-center bg-black pb-6">
+        <div className="w-full max-w-[414px] px-4 flex justify-between items-center">
+          {/* Back Button - Left */}
+          <Button
+            variant="ghost"
+            onClick={onCancel}
+            className="text-white hover:bg-gray-900"
+            data-testid="button-back"
+          >
+            Back
+          </Button>
 
-        <div>
-          <Label className="text-sm font-bold mb-3 block text-white/90 tracking-wide uppercase">Comment Position</Label>
-          <RadioGroup value={commentPosition} onValueChange={(v) => setCommentPosition(v as "top" | "bottom")}>
-            <div className="flex items-center space-x-3 p-3 rounded-2xl hover:bg-white/5 transition-colors cursor-pointer">
-              <RadioGroupItem value="top" id="top" data-testid="radio-comment-top" className="border-white/30" />
-              <Label htmlFor="top" className="cursor-pointer font-semibold text-white/90">Top</Label>
-            </div>
-            <div className="flex items-center space-x-3 p-3 rounded-2xl hover:bg-white/5 transition-colors cursor-pointer">
-              <RadioGroupItem value="bottom" id="bottom" data-testid="radio-comment-bottom" className="border-white/30" />
-              <Label htmlFor="bottom" className="cursor-pointer font-semibold text-white/90">Bottom</Label>
-            </div>
-          </RadioGroup>
+          {/* Publish Button - Right */}
+          <Button
+            onClick={handleUpload}
+            disabled={isUploading}
+            className="text-white hover:bg-gray-900"
+            data-testid="button-upload"
+          >
+            Publish
+          </Button>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
