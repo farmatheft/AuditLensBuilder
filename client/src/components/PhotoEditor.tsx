@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, Circle, Trash2, Upload, RotateCw, Maximize2 } from "lucide-react";
+import { ArrowRight, Circle, Trash2, Upload, RotateCw, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
+import { LocationPicker } from "@/components/LocationPicker";
 import type { Sticker, Geolocation } from "@shared/schema";
 
 interface PhotoEditorProps {
@@ -18,10 +20,20 @@ interface PhotoEditorProps {
   onCancel: () => void;
 }
 
+const STICKER_COLORS = [
+  { name: "red", value: "rgb(255, 50, 50)" },
+  { name: "yellow", value: "rgb(255, 200, 0)" },
+  { name: "green", value: "rgb(0, 255, 100)" },
+  { name: "blue", value: "rgb(33, 150, 243)" },
+  { name: "cyan", value: "rgb(0, 255, 255)" },
+  { name: "gray", value: "rgb(128, 128, 128)" },
+  { name: "black", value: "rgb(0, 0, 0)" },
+];
+
 export function PhotoEditor({
   imageData,
   location,
-  comment,
+  comment: initialComment,
   projectId,
   projectName,
   capturedAt,
@@ -33,7 +45,10 @@ export function PhotoEditor({
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
   const [placingSticker, setPlacingSticker] = useState<"arrow" | "circle" | "circle-filled" | "crosshair" | "arrow-3d" | null>(null);
-  const [commentPosition, setCommentPosition] = useState<"top" | "bottom">("top");
+  const [currentComment, setCurrentComment] = useState(initialComment);
+  const [selectedColor, setSelectedColor] = useState<string>("red");
+  const [currentLocation, setCurrentLocation] = useState<Geolocation | null>(location);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -53,7 +68,7 @@ export function PhotoEditor({
     if (imageLoaded) {
       redrawCanvas();
     }
-  }, [stickers, selectedSticker, commentPosition, comment, imageLoaded]);
+  }, [stickers, selectedSticker, currentComment, imageLoaded]);
 
   const redrawCanvas = () => {
     const canvas = canvasRef.current;
@@ -68,84 +83,7 @@ export function PhotoEditor({
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
 
-      if (comment) {
-        const fontSize = Math.max(24, img.height / 30);
-        ctx.font = `${fontSize}px Roboto, sans-serif`;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-        const padding = fontSize * 0.5;
-        const y = commentPosition === "top" ? padding : img.height - fontSize - padding;
-
-        ctx.fillRect(0, y - fontSize - padding / 2, img.width, fontSize + padding);
-        ctx.fillStyle = "white";
-        ctx.fillText(comment, padding, y);
-      }
-
-      // Draw timestamp at bottom right
-      const timestamp = uploadTimestamp.toLocaleString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-      const timestampFontSize = Math.max(18, img.height / 45);
-      ctx.font = `bold ${timestampFontSize}px Roboto, sans-serif`;
-      const timestampMetrics = ctx.measureText(timestamp);
-      const timestampPadding = timestampFontSize * 0.6;
-      const timestampY = img.height - timestampPadding * 1.2;
-      const timestampX = img.width - timestampMetrics.width - timestampPadding * 2;
-
-      ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
-      ctx.fillRect(
-        timestampX - timestampPadding,
-        timestampY - timestampFontSize - timestampPadding / 2,
-        timestampMetrics.width + timestampPadding * 2,
-        timestampFontSize + timestampPadding * 1.2
-      );
-      ctx.fillStyle = "white";
-      ctx.fillText(timestamp, timestampX, timestampY - timestampPadding / 2);
-
-      // Draw location at bottom left if available
-      if (location) {
-        const locationText = `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
-        const locationFontSize = Math.max(18, img.height / 45);
-        ctx.font = `bold ${locationFontSize}px Roboto, sans-serif`;
-        const locationMetrics = ctx.measureText(locationText);
-        const locationPadding = locationFontSize * 0.6;
-        const locationY = img.height - locationPadding * 1.2;
-        const locationX = locationPadding * 2;
-        const iconSize = locationFontSize * 1.2;
-
-        // Draw background
-        ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
-        ctx.fillRect(
-          locationPadding,
-          locationY - locationFontSize - locationPadding / 2,
-          locationMetrics.width + iconSize + locationPadding * 3,
-          locationFontSize + locationPadding * 1.2
-        );
-
-        // Draw map pin icon
-        ctx.fillStyle = "#10b981"; // emerald-500
-        ctx.beginPath();
-        const pinX = locationPadding + iconSize / 2;
-        const pinY = locationY - locationFontSize / 2;
-        ctx.arc(pinX, pinY - iconSize * 0.15, iconSize * 0.25, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(pinX, pinY + iconSize * 0.15);
-        ctx.lineTo(pinX - iconSize * 0.15, pinY - iconSize * 0.05);
-        ctx.lineTo(pinX + iconSize * 0.15, pinY - iconSize * 0.05);
-        ctx.closePath();
-        ctx.fill();
-
-        // Draw location text
-        ctx.fillStyle = "white";
-        ctx.fillText(locationText, locationX + iconSize + locationPadding, locationY - locationPadding / 2);
-      }
-
+      // Draw stickers only - timestamp and location are now in the bottom info bar
       stickers.forEach((sticker) => {
         ctx.save();
         const centerX = sticker.x + sticker.width / 2;
@@ -154,113 +92,115 @@ export function PhotoEditor({
         ctx.rotate((sticker.rotation * Math.PI) / 180);
         ctx.translate(-centerX, -centerY);
 
-        if (sticker.type === "arrow") {
-          ctx.strokeStyle = "rgb(255, 200, 0)";
-          ctx.fillStyle = "rgb(255, 200, 0)";
-          ctx.lineWidth = Math.max(4, sticker.width / 20);
+        const colorObj = STICKER_COLORS.find(c => c.name === sticker.color) || STICKER_COLORS[0];
+        const baseColor = colorObj.value;
 
-          ctx.beginPath();
-          ctx.moveTo(sticker.x, sticker.y + sticker.height / 2);
-          ctx.lineTo(sticker.x + sticker.width * 0.7, sticker.y + sticker.height / 2);
-          ctx.stroke();
+        if (sticker.type === "arrow" || sticker.type === "arrow-3d") {
+          // Arrow Logic
+          const shaftWidth = sticker.height * 0.4;
+          const headWidth = sticker.height * 0.8;
+          const headLen = sticker.width * 0.4;
 
-          ctx.beginPath();
-          ctx.moveTo(sticker.x + sticker.width, sticker.y + sticker.height / 2);
-          ctx.lineTo(sticker.x + sticker.width * 0.7, sticker.y + sticker.height * 0.2);
-          ctx.lineTo(sticker.x + sticker.width * 0.7, sticker.y + sticker.height * 0.8);
-          ctx.closePath();
-          ctx.fill();
-        } else if (sticker.type === "arrow-3d") {
-          const gradient = ctx.createLinearGradient(sticker.x, sticker.y, sticker.x + sticker.width, sticker.y + sticker.height);
-          gradient.addColorStop(0, "rgb(255, 200, 0)");
-          gradient.addColorStop(0.5, "rgb(255, 150, 0)");
-          gradient.addColorStop(1, "rgb(200, 100, 0)");
-          
-          ctx.strokeStyle = gradient;
-          ctx.fillStyle = gradient;
-          ctx.lineWidth = Math.max(5, sticker.width / 18);
-
-          ctx.beginPath();
-          ctx.moveTo(sticker.x, sticker.y + sticker.height / 2);
-          ctx.lineTo(sticker.x + sticker.width * 0.65, sticker.y + sticker.height / 2);
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.moveTo(sticker.x + sticker.width, sticker.y + sticker.height / 2);
-          ctx.lineTo(sticker.x + sticker.width * 0.65, sticker.y + sticker.height * 0.15);
-          ctx.lineTo(sticker.x + sticker.width * 0.65, sticker.y + sticker.height * 0.85);
-          ctx.closePath();
-          ctx.fill();
-        } else if (sticker.type === "circle") {
-          ctx.strokeStyle = "rgb(255, 50, 50)";
-          ctx.lineWidth = Math.max(4, sticker.width / 15);
-          ctx.beginPath();
-          ctx.ellipse(
-            sticker.x + sticker.width / 2,
-            sticker.y + sticker.height / 2,
-            sticker.width / 2,
-            sticker.height / 2,
-            0,
-            0,
-            2 * Math.PI
-          );
-          ctx.stroke();
-        } else if (sticker.type === "circle-filled") {
-          ctx.fillStyle = "rgba(255, 50, 50, 0.4)";
-          ctx.strokeStyle = "rgb(255, 50, 50)";
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.ellipse(
-            sticker.x + sticker.width / 2,
-            sticker.y + sticker.height / 2,
-            sticker.width / 2,
-            sticker.height / 2,
-            0,
-            0,
-            2 * Math.PI
-          );
-          ctx.fill();
-          ctx.stroke();
-        } else if (sticker.type === "crosshair") {
-          ctx.strokeStyle = "rgb(0, 255, 100)";
+          ctx.fillStyle = baseColor;
+          ctx.strokeStyle = "white";
           ctx.lineWidth = Math.max(3, sticker.width / 25);
-          
-          const cx = sticker.x + sticker.width / 2;
-          const cy = sticker.y + sticker.height / 2;
-          
-          // Outer circle
+
+          // Shadow
+          ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+
           ctx.beginPath();
-          ctx.arc(cx, cy, sticker.width / 2, 0, 2 * Math.PI);
+          ctx.moveTo(sticker.x, sticker.y + sticker.height / 2 - shaftWidth / 2);
+          ctx.lineTo(sticker.x + sticker.width - headLen, sticker.y + sticker.height / 2 - shaftWidth / 2);
+          ctx.lineTo(sticker.x + sticker.width - headLen, sticker.y + sticker.height / 2 - headWidth / 2);
+          ctx.lineTo(sticker.x + sticker.width, sticker.y + sticker.height / 2);
+          ctx.lineTo(sticker.x + sticker.width - headLen, sticker.y + sticker.height / 2 + headWidth / 2);
+          ctx.lineTo(sticker.x + sticker.width - headLen, sticker.y + sticker.height / 2 + shaftWidth / 2);
+          ctx.lineTo(sticker.x, sticker.y + sticker.height / 2 + shaftWidth / 2);
+          ctx.closePath();
+
+          ctx.fill();
+          ctx.shadowColor = "transparent"; // Reset shadow for stroke
           ctx.stroke();
-          
-          // Vertical line
+
+          // 3D Highlight effect
+          if (sticker.type === "arrow-3d") {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.lineWidth = shaftWidth / 3;
+            ctx.beginPath();
+            ctx.moveTo(sticker.x + 5, sticker.y + sticker.height / 2 - shaftWidth / 4);
+            ctx.lineTo(sticker.x + sticker.width - headLen - 5, sticker.y + sticker.height / 2 - shaftWidth / 4);
+            ctx.stroke();
+          }
+
+        } else if (sticker.type === "circle" || sticker.type === "circle-filled") {
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = Math.max(3, sticker.width / 25);
+
+          // Shadow
+          ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+
           ctx.beginPath();
-          ctx.moveTo(cx, sticker.y);
-          ctx.lineTo(cx, sticker.y + sticker.height);
-          ctx.stroke();
-          
-          // Horizontal line
-          ctx.beginPath();
-          ctx.moveTo(sticker.x, cy);
-          ctx.lineTo(sticker.x + sticker.width, cy);
-          ctx.stroke();
-          
-          // Inner circle
-          ctx.beginPath();
-          ctx.arc(cx, cy, sticker.width / 8, 0, 2 * Math.PI);
-          ctx.stroke();
+          ctx.ellipse(
+            sticker.x + sticker.width / 2,
+            sticker.y + sticker.height / 2,
+            sticker.width / 2,
+            sticker.height / 2,
+            0,
+            0,
+            2 * Math.PI
+          );
+
+          if (sticker.type === "circle-filled") {
+            ctx.fillStyle = baseColor.replace("rgb", "rgba").replace(")", ", 0.7)");
+            ctx.fill();
+            ctx.strokeStyle = baseColor; // Colored border for filled
+            ctx.stroke();
+            // White outer ring
+            ctx.beginPath();
+            ctx.ellipse(
+              sticker.x + sticker.width / 2,
+              sticker.y + sticker.height / 2,
+              sticker.width / 2,
+              sticker.height / 2,
+              0,
+              0,
+              2 * Math.PI
+            );
+            ctx.strokeStyle = "white";
+            ctx.stroke();
+          } else {
+            ctx.strokeStyle = baseColor;
+            ctx.stroke();
+            // White outer ring
+            ctx.beginPath();
+            ctx.ellipse(
+              sticker.x + sticker.width / 2,
+              sticker.y + sticker.height / 2,
+              sticker.width / 2 + 2,
+              sticker.height / 2 + 2,
+              0,
+              0,
+              2 * Math.PI
+            );
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+          ctx.shadowColor = "transparent";
         }
 
         if (selectedSticker === sticker.id) {
           ctx.strokeStyle = "rgba(33, 150, 243, 0.8)";
           ctx.lineWidth = 2;
           ctx.setLineDash([5, 5]);
-          ctx.strokeRect(sticker.x, sticker.y, sticker.width, sticker.height);
+          ctx.strokeRect(sticker.x - 5, sticker.y - 5, sticker.width + 10, sticker.height + 10);
           ctx.setLineDash([]);
-
-          const handleSize = 12;
-          ctx.fillStyle = "rgba(33, 150, 243, 0.9)";
-          ctx.fillRect(sticker.x + sticker.width - handleSize / 2, sticker.y + sticker.height - handleSize / 2, handleSize, handleSize);
         }
 
         ctx.restore();
@@ -286,6 +226,7 @@ export function PhotoEditor({
       width: 100,
       height: 100,
       rotation: 0,
+      color: selectedColor as any,
     };
 
     setStickers([...stickers, newSticker]);
@@ -342,14 +283,14 @@ export function PhotoEditor({
     );
   };
 
-  const resizeSelected = () => {
+  const resizeSelected = (direction: "up" | "down") => {
     if (!selectedSticker) return;
     setStickers(
-      stickers.map((s) =>
-        s.id === selectedSticker
-          ? { ...s, width: s.width * 1.2, height: s.height * 1.2 }
-          : s
-      )
+      stickers.map((s) => {
+        if (s.id !== selectedSticker) return s;
+        const factor = direction === "up" ? 1.1 : 0.9;
+        return { ...s, width: s.width * factor, height: s.height * factor };
+      })
     );
   };
 
@@ -364,18 +305,31 @@ export function PhotoEditor({
     setUploadProgress(0);
 
     try {
-      const response = await fetch(imageData);
-      const blob = await response.blob();
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        throw new Error("Canvas not available");
+      }
+
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Failed to create blob from canvas"));
+          }
+        }, "image/jpeg", 0.95);
+      });
 
       const formData = new FormData();
       formData.append("photo", blob, `photo-${Date.now()}.jpg`);
-      formData.append("projectId", projectId);
-      formData.append("comment", comment);
-      formData.append("commentPosition", commentPosition);
-      formData.append("capturedAt", capturedAt);
-      if (location) {
-        formData.append("latitude", location.latitude.toString());
-        formData.append("longitude", location.longitude.toString());
+      formData.append("project_id", projectId);
+      formData.append("project_title", projectName);
+      formData.append("comment", currentComment);
+      formData.append("captured_at", capturedAt);
+      if (currentLocation) {
+        formData.append("latitude", currentLocation.latitude.toString());
+        formData.append("longitude", currentLocation.longitude.toString());
       }
       formData.append("stickers", JSON.stringify(stickers));
 
@@ -390,6 +344,7 @@ export function PhotoEditor({
         if (xhr.status === 201) {
           onUploadComplete();
         } else {
+          console.error("Upload failed with status:", xhr.status, xhr.responseText);
           throw new Error("Upload failed");
         }
       });
@@ -402,13 +357,14 @@ export function PhotoEditor({
       xhr.send(formData);
     } catch (error) {
       console.error("Upload error:", error);
+      alert("Upload failed. Please try again.");
       setIsUploading(false);
       setUploadProgress(0);
     }
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-black safe-area-inset overflow-hidden">
+    <div className="fixed inset-0 flex flex-row bg-black safe-area-inset overflow-hidden">
       {isUploading && (
         <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center">
           <div className="text-center">
@@ -418,45 +374,22 @@ export function PhotoEditor({
         </div>
       )}
 
-      {/* Canvas Area - Fixed size with overlay buttons */}
-      <div className="relative flex-1 overflow-hidden flex items-center justify-center bg-black">
-        <div ref={containerRef} className="relative w-full max-w-[414px] h-full max-h-[736px]">
-          {/* Cancel Button - Top Left */}
-          <Button
-            size="icon"
-            onClick={onCancel}
-            className="absolute top-4 left-4 z-10 w-12 h-12 rounded-full bg-black/80 hover:bg-black border-2 border-red-500"
-            data-testid="button-cancel"
-          >
-            <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
+      {/* Main Content Area (Canvas + Info) */}
+      <div className="flex-1 flex flex-col relative overflow-hidden bg-black">
+        {/* Cancel Button - Absolute Top Left */}
+        <Button
+          size="icon"
+          onClick={onCancel}
+          className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 border border-red-500/50 text-red-500"
+          data-testid="button-cancel"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </Button>
 
-          {/* Add Sticker Button - Bottom Left */}
-          <Button
-            size="icon"
-            onClick={() => {
-              const newSticker: Sticker = {
-                id: `sticker-${Date.now()}`,
-                type: "circle-filled",
-                x: 150,
-                y: 300,
-                width: 100,
-                height: 100,
-                rotation: 0,
-              };
-              setStickers([...stickers, newSticker]);
-              setSelectedSticker(newSticker.id);
-            }}
-            className="absolute bottom-4 left-4 z-10 w-12 h-12 rounded-full bg-yellow-400 hover:bg-yellow-500"
-            data-testid="button-add-sticker"
-          >
-            <svg className="w-6 h-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-            </svg>
-          </Button>
-
+        {/* Canvas Container - Centered & Aspect Ratio Preserved */}
+        <div className="flex-1 flex items-center justify-center p-4 overflow-hidden relative">
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
@@ -481,75 +414,197 @@ export function PhotoEditor({
               handleCanvasMouseMove(mouseEvent as any);
             }}
             onTouchEnd={() => handleCanvasMouseUp()}
-            className="w-full h-full cursor-crosshair touch-none bg-white"
+            className="max-w-full max-h-full object-contain shadow-2xl"
             data-testid="canvas-editor"
           />
         </div>
-      </div>
 
-      {/* Location Bar */}
-      <div className="flex justify-center bg-black">
-        <div className="w-full max-w-[414px] bg-black text-white px-4 py-3">
-          {location ? (
-            <div className="text-lg font-mono" data-testid="text-location">
-              {location.latitude.toFixed(4)},{location.longitude.toFixed(4)}
+        {/* Info Bars (Bottom of Main Area) */}
+        <div className="w-full bg-black/80 backdrop-blur-sm border-t border-gray-800">
+          {/* Location & Timestamp Row */}
+          <div className="flex justify-between items-center px-4 py-2 text-xs text-gray-400 font-mono border-b border-gray-800/50">
+            <button
+              onClick={() => setShowLocationPicker(true)}
+              className="hover:text-white hover:bg-gray-800/50 rounded px-2 py-1 -mx-2 -my-1 transition-colors flex items-center gap-1"
+            >
+              {currentLocation ? `${currentLocation.latitude.toFixed(4)}, ${currentLocation.longitude.toFixed(4)}` : "No location - click to set"}
+            </button>
+            <div>
+              {new Date(capturedAt).toLocaleString('en-CA', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+              }).replace(',', '')}
             </div>
-          ) : (
-            <div className="text-sm text-gray-400">No location</div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      {/* Comment Bar */}
-      <div className="flex justify-center bg-black">
-        <div className="w-full max-w-[414px] bg-black text-white px-4 py-3">
-          <div className="text-base">
-            <span className="font-bold">{projectName}</span> - {comment || "custom comment"}
+          {/* Comment Input */}
+          <div className="px-4 py-3 flex items-center gap-3">
+            <span className="text-sm font-bold text-white whitespace-nowrap">{projectName}</span>
+            <Input
+              value={currentComment}
+              onChange={(e) => setCurrentComment(e.target.value)}
+              className="bg-gray-900/50 border-gray-700 text-white h-9 text-sm"
+              placeholder="Add comment..."
+            />
           </div>
         </div>
       </div>
 
-      {/* Timestamp Bar */}
-      <div className="flex justify-center bg-black pb-4">
-        <div className="w-full max-w-[414px] bg-black text-white px-4 text-right">
-          <div className="text-sm font-mono">
-            {new Date(capturedAt).toLocaleString('en-CA', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: false
-            }).replace(',', '')}
-          </div>
-        </div>
-      </div>
+      {/* Right Sidebar - Vertical Toolbar */}
+      <div className="w-20 flex flex-col items-center bg-gray-900 border-l border-gray-800 py-4 gap-6 z-20 overflow-y-auto no-scrollbar">
 
-      {/* Action Buttons */}
-      <div className="flex justify-center bg-black pb-6">
-        <div className="w-full max-w-[414px] px-4 flex justify-between items-center">
-          {/* Back Button - Left */}
+        {/* Colors */}
+        <div className="flex flex-col gap-3 items-center">
+          <Label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Color</Label>
+          {STICKER_COLORS.map((color) => (
+            <button
+              key={color.name}
+              onClick={() => {
+                setSelectedColor(color.name);
+                if (selectedSticker) {
+                  setStickers(stickers.map(s => s.id === selectedSticker ? { ...s, color: color.name as any } : s));
+                }
+              }}
+              className={`w-8 h-8 rounded-full border-2 transition-all ${selectedColor === color.name ? 'border-white scale-110 shadow-lg shadow-white/20' : 'border-transparent hover:scale-105'}`}
+              style={{ backgroundColor: color.value }}
+              title={color.name}
+            />
+          ))}
+        </div>
+
+        <div className="w-full h-px bg-gray-800" />
+
+        {/* Tools */}
+        <div className="flex flex-col gap-4 items-center w-full px-2">
+          <Label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Tools</Label>
+
           <Button
             variant="ghost"
+            size="icon"
+            onClick={() => {
+              const newSticker: Sticker = {
+                id: `sticker-${Date.now()}`,
+                type: "circle-filled",
+                x: 150,
+                y: 300,
+                width: 100,
+                height: 100,
+                rotation: 0,
+                color: selectedColor as any,
+              };
+              setStickers([...stickers, newSticker]);
+              setSelectedSticker(newSticker.id);
+            }}
+            className="text-gray-400 hover:text-white hover:bg-gray-800 w-10 h-10 rounded-xl"
+            title="Add Circle"
+          >
+            <Circle className="w-6 h-6 fill-current" style={{ color: STICKER_COLORS.find(c => c.name === selectedColor)?.value }} />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              const newSticker: Sticker = {
+                id: `sticker-${Date.now()}`,
+                type: "arrow-3d",
+                x: 150,
+                y: 300,
+                width: 100,
+                height: 100,
+                rotation: 0,
+                color: selectedColor as any,
+              };
+              setStickers([...stickers, newSticker]);
+              setSelectedSticker(newSticker.id);
+            }}
+            className="text-gray-400 hover:text-white hover:bg-gray-800 w-10 h-10 rounded-xl"
+            title="Add Arrow"
+          >
+            <ArrowRight className="w-6 h-6" style={{ color: STICKER_COLORS.find(c => c.name === selectedColor)?.value }} />
+          </Button>
+        </div>
+
+        {/* Context Actions (Only when sticker selected) */}
+        {selectedSticker && (
+          <>
+            <div className="w-full h-px bg-gray-800" />
+            <div className="flex flex-col gap-2 items-center w-full px-2 animate-in fade-in slide-in-from-right-4 duration-200">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={rotateSelected}
+                className="text-blue-400 hover:text-blue-300 hover:bg-gray-800 w-10 h-10"
+                title="Rotate"
+              >
+                <RotateCw className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => resizeSelected("up")}
+                className="text-blue-400 hover:text-blue-300 hover:bg-gray-800 w-10 h-10"
+                title="Larger"
+              >
+                <Maximize2 className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => resizeSelected("down")}
+                className="text-blue-400 hover:text-blue-300 hover:bg-gray-800 w-10 h-10"
+                title="Smaller"
+              >
+                <Minimize2 className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={deleteSelected}
+                className="text-red-400 hover:text-red-300 hover:bg-gray-800 w-10 h-10"
+                title="Delete"
+              >
+                <Trash2 className="w-5 h-5" />
+              </Button>
+            </div>
+          </>
+        )}
+
+        <div className="flex-1" />
+
+        {/* Bottom Actions */}
+        <div className="flex flex-col gap-4 items-center w-full pb-4">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onCancel}
-            className="text-white hover:bg-gray-900"
-            data-testid="button-back"
+            className="text-gray-400 hover:text-white text-xs"
           >
             Back
           </Button>
-
-          {/* Publish Button - Right */}
           <Button
             onClick={handleUpload}
             disabled={isUploading}
-            className="text-white hover:bg-gray-900"
-            data-testid="button-upload"
+            size="icon"
+            className="w-12 h-12 rounded-full bg-white hover:bg-gray-200 text-black shadow-lg shadow-white/10"
+            title="Publish"
           >
-            Publish
+            <Upload className="w-5 h-5" />
           </Button>
         </div>
       </div>
+
+      {/* Location Picker Modal */}
+      {showLocationPicker && (
+        <LocationPicker
+          initialLocation={currentLocation}
+          onSave={(newLocation) => {
+            setCurrentLocation(newLocation);
+            setShowLocationPicker(false);
+          }}
+          onCancel={() => setShowLocationPicker(false)}
+        />
+      )}
     </div>
   );
 }

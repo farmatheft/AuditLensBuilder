@@ -3,6 +3,7 @@ import { Camera, MapPin, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { LocationPicker } from "@/components/LocationPicker";
 import type { Geolocation } from "@shared/schema";
 
 interface CameraCaptureProps {
@@ -22,6 +23,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
   const [isCapturing, setIsCapturing] = useState(false);
   const [showCommentWarning, setShowCommentWarning] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -181,18 +183,29 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
       {/* Location Bar - Full width of video */}
       <div className="flex justify-center bg-black">
         <div className="w-full max-w-[414px] bg-black text-white px-4 py-3">
-          {location ? (
-            <div className="text-lg font-mono" data-testid="text-location">
-              {location.latitude.toFixed(4)},{location.longitude.toFixed(4)}
-            </div>
-          ) : locationError ? (
-            <div className="text-sm text-gray-400">{locationError}</div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Acquiring GPS...</span>
-            </div>
-          )}
+          <button
+            onClick={() => setShowLocationPicker(true)}
+            className="w-full text-left hover:bg-gray-900 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors"
+          >
+            {location ? (
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-blue-400" />
+                <span className="text-lg font-mono" data-testid="text-location">
+                  {location.latitude.toFixed(4)},{location.longitude.toFixed(4)}
+                </span>
+              </div>
+            ) : locationError ? (
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <MapPin className="w-4 h-4" />
+                <span>{locationError}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Acquiring GPS...</span>
+              </div>
+            )}
+          </button>
         </div>
       </div>
 
@@ -272,7 +285,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
           <div className="relative max-w-md w-full">
             {/* Glow Effect */}
             <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 rounded-3xl blur-2xl opacity-30 animate-[gradient-xy_3s_ease_infinite]"></div>
-            
+
             {/* Modal Content */}
             <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-amber-500/30 rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 duration-300">
               <div className="flex items-start gap-4 mb-6">
@@ -312,6 +325,19 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
             </div>
           </div>
         </div>
+      )}
+
+      {/* Location Picker Modal */}
+      {showLocationPicker && (
+        <LocationPicker
+          initialLocation={location}
+          onSave={(newLocation) => {
+            setLocation(newLocation);
+            setLocationError("");
+            setShowLocationPicker(false);
+          }}
+          onCancel={() => setShowLocationPicker(false)}
+        />
       )}
     </div>
   );

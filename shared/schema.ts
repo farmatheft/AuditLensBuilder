@@ -55,6 +55,7 @@ export interface Sticker {
   width: number;
   height: number;
   rotation: number;
+  color?: "red" | "yellow" | "green" | "blue" | "cyan" | "gray" | "black";
 }
 
 // Zod schemas for validation
