@@ -5,7 +5,7 @@ import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FolderOpen, Plus } from "lucide-react";
-import type { Project } from "@shared/schema";
+import type { Project } from "@/types/schema";
 
 export default function ProjectsPage() {
   const [, setLocation] = useLocation();

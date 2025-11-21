@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Camera } from "lucide-react";
-import type { Photo } from "@shared/schema";
+import type { Photo } from "@/types/schema";
 import { formatDistanceToNow } from "date-fns";
 
 export default function GalleryPage() {

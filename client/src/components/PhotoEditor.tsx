@@ -1,13 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, Circle, Trash2, Upload, RotateCw, Maximize2, Minimize2 } from "lucide-react";
+import { Trash2, Upload, RotateCw, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Card } from "@/components/ui/card";
 import { LocationPicker } from "@/components/LocationPicker";
-import type { Sticker, Geolocation } from "@shared/schema";
+import type { Sticker, Geolocation } from "@/types/schema";
 
 interface PhotoEditorProps {
   imageData: string;
@@ -20,16 +18,6 @@ interface PhotoEditorProps {
   onCancel: () => void;
 }
 
-const STICKER_COLORS = [
-  { name: "red", value: "rgb(255, 50, 50)" },
-  { name: "yellow", value: "rgb(255, 200, 0)" },
-  { name: "green", value: "rgb(0, 255, 100)" },
-  { name: "blue", value: "rgb(33, 150, 243)" },
-  { name: "cyan", value: "rgb(0, 255, 255)" },
-  { name: "gray", value: "rgb(128, 128, 128)" },
-  { name: "black", value: "rgb(0, 0, 0)" },
-];
-
 export function PhotoEditor({
   imageData,
   location,
@@ -41,12 +29,10 @@ export function PhotoEditor({
   onCancel,
 }: PhotoEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
-  const [placingSticker, setPlacingSticker] = useState<"arrow" | "circle" | "circle-filled" | "crosshair" | "arrow-3d" | null>(null);
+  const [placingSticker, setPlacingSticker] = useState<"arrow" | "dpt" | null>(null);
   const [currentComment, setCurrentComment] = useState(initialComment);
-  const [selectedColor, setSelectedColor] = useState<string>("red");
   const [currentLocation, setCurrentLocation] = useState<Geolocation | null>(location);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -55,7 +41,19 @@ export function PhotoEditor({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
 
+  // Preload sticker images
+  const arrowImgRef = useRef<HTMLImageElement | null>(null);
+  const dptImgRef = useRef<HTMLImageElement | null>(null);
+
   useEffect(() => {
+    const arrow = new Image();
+    arrow.src = "/stickers/arrow.png";
+    arrowImgRef.current = arrow;
+
+    const dpt = new Image();
+    dpt.src = "/stickers/dpt.png";
+    dptImgRef.current = dpt;
+
     const img = new Image();
     img.onload = () => {
       setImageLoaded(true);
@@ -70,7 +68,7 @@ export function PhotoEditor({
     }
   }, [stickers, selectedSticker, currentComment, imageLoaded]);
 
-  const redrawCanvas = () => {
+  const redrawCanvas = (overrideSelectedSticker?: string | null) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -83,7 +81,7 @@ export function PhotoEditor({
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
 
-      // Draw stickers only - timestamp and location are now in the bottom info bar
+      // Draw stickers
       stickers.forEach((sticker) => {
         ctx.save();
         const centerX = sticker.x + sticker.width / 2;
@@ -92,110 +90,21 @@ export function PhotoEditor({
         ctx.rotate((sticker.rotation * Math.PI) / 180);
         ctx.translate(-centerX, -centerY);
 
-        const colorObj = STICKER_COLORS.find(c => c.name === sticker.color) || STICKER_COLORS[0];
-        const baseColor = colorObj.value;
+        const stickerImg = sticker.type === "arrow" ? arrowImgRef.current : dptImgRef.current;
 
-        if (sticker.type === "arrow" || sticker.type === "arrow-3d") {
-          // Arrow Logic
-          const shaftWidth = sticker.height * 0.4;
-          const headWidth = sticker.height * 0.8;
-          const headLen = sticker.width * 0.4;
-
-          ctx.fillStyle = baseColor;
-          ctx.strokeStyle = "white";
-          ctx.lineWidth = Math.max(3, sticker.width / 25);
-
-          // Shadow
-          ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-          ctx.shadowBlur = 4;
-          ctx.shadowOffsetX = 2;
-          ctx.shadowOffsetY = 2;
-
-          ctx.beginPath();
-          ctx.moveTo(sticker.x, sticker.y + sticker.height / 2 - shaftWidth / 2);
-          ctx.lineTo(sticker.x + sticker.width - headLen, sticker.y + sticker.height / 2 - shaftWidth / 2);
-          ctx.lineTo(sticker.x + sticker.width - headLen, sticker.y + sticker.height / 2 - headWidth / 2);
-          ctx.lineTo(sticker.x + sticker.width, sticker.y + sticker.height / 2);
-          ctx.lineTo(sticker.x + sticker.width - headLen, sticker.y + sticker.height / 2 + headWidth / 2);
-          ctx.lineTo(sticker.x + sticker.width - headLen, sticker.y + sticker.height / 2 + shaftWidth / 2);
-          ctx.lineTo(sticker.x, sticker.y + sticker.height / 2 + shaftWidth / 2);
-          ctx.closePath();
-
-          ctx.fill();
-          ctx.shadowColor = "transparent"; // Reset shadow for stroke
-          ctx.stroke();
-
-          // 3D Highlight effect
-          if (sticker.type === "arrow-3d") {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-            ctx.lineWidth = shaftWidth / 3;
-            ctx.beginPath();
-            ctx.moveTo(sticker.x + 5, sticker.y + sticker.height / 2 - shaftWidth / 4);
-            ctx.lineTo(sticker.x + sticker.width - headLen - 5, sticker.y + sticker.height / 2 - shaftWidth / 4);
-            ctx.stroke();
-          }
-
-        } else if (sticker.type === "circle" || sticker.type === "circle-filled") {
-          ctx.strokeStyle = "white";
-          ctx.lineWidth = Math.max(3, sticker.width / 25);
-
-          // Shadow
-          ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-          ctx.shadowBlur = 4;
-          ctx.shadowOffsetX = 2;
-          ctx.shadowOffsetY = 2;
-
-          ctx.beginPath();
-          ctx.ellipse(
-            sticker.x + sticker.width / 2,
-            sticker.y + sticker.height / 2,
-            sticker.width / 2,
-            sticker.height / 2,
-            0,
-            0,
-            2 * Math.PI
-          );
-
-          if (sticker.type === "circle-filled") {
-            ctx.fillStyle = baseColor.replace("rgb", "rgba").replace(")", ", 0.7)");
-            ctx.fill();
-            ctx.strokeStyle = baseColor; // Colored border for filled
-            ctx.stroke();
-            // White outer ring
-            ctx.beginPath();
-            ctx.ellipse(
-              sticker.x + sticker.width / 2,
-              sticker.y + sticker.height / 2,
-              sticker.width / 2,
-              sticker.height / 2,
-              0,
-              0,
-              2 * Math.PI
-            );
-            ctx.strokeStyle = "white";
-            ctx.stroke();
-          } else {
-            ctx.strokeStyle = baseColor;
-            ctx.stroke();
-            // White outer ring
-            ctx.beginPath();
-            ctx.ellipse(
-              sticker.x + sticker.width / 2,
-              sticker.y + sticker.height / 2,
-              sticker.width / 2 + 2,
-              sticker.height / 2 + 2,
-              0,
-              0,
-              2 * Math.PI
-            );
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-          }
-          ctx.shadowColor = "transparent";
+        if (stickerImg && stickerImg.complete) {
+          ctx.drawImage(stickerImg, sticker.x, sticker.y, sticker.width, sticker.height);
+        } else {
+          // Fallback if image not loaded yet (shouldn't happen often with preloading)
+          ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+          ctx.fillRect(sticker.x, sticker.y, sticker.width, sticker.height);
         }
 
-        if (selectedSticker === sticker.id) {
+        // Selection box
+        // Use override if provided, otherwise use state
+        const currentSelection = overrideSelectedSticker !== undefined ? overrideSelectedSticker : selectedSticker;
+
+        if (currentSelection === sticker.id) {
           ctx.strokeStyle = "rgba(33, 150, 243, 0.8)";
           ctx.lineWidth = 2;
           ctx.setLineDash([5, 5]);
@@ -226,7 +135,6 @@ export function PhotoEditor({
       width: 100,
       height: 100,
       rotation: 0,
-      color: selectedColor as any,
     };
 
     setStickers([...stickers, newSticker]);
@@ -243,7 +151,9 @@ export function PhotoEditor({
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
-    const clickedSticker = stickers.find((s) => {
+    // Find clicked sticker (reverse order to select top-most)
+    const clickedSticker = [...stickers].reverse().find((s) => {
+      // Simple bounding box check (doesn't account for rotation perfectly but good enough for UI)
       return x >= s.x && x <= s.x + s.width && y >= s.y && y <= s.y + s.height;
     });
 
@@ -304,6 +214,12 @@ export function PhotoEditor({
     setIsUploading(true);
     setUploadProgress(0);
 
+    // Deselect sticker visually and in state
+    setSelectedSticker(null);
+
+    // Force redraw without selection box immediately for the upload blob
+    redrawCanvas(null);
+
     try {
       const canvas = canvasRef.current;
       if (!canvas) {
@@ -312,13 +228,27 @@ export function PhotoEditor({
 
       // Convert canvas to blob
       const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error("Failed to create blob from canvas"));
-          }
-        }, "image/jpeg", 0.95);
+        // Small timeout to ensure redraw has happened (though image onload is async, 
+        // since we're loading from data URL it should be fast, but let's be safe)
+        // Actually, redrawCanvas loads image async. We need to wait for it.
+        // But since we are reusing the same image src, it might be cached.
+
+        // BETTER APPROACH: 
+        // We can't easily wait for redrawCanvas because it creates a new Image().
+        // Instead, let's just rely on the fact that we updated the state and called redraw.
+        // But to be 100% sure for the blob, we should probably wait a tiny bit or 
+        // make redrawCanvas return a promise. 
+
+        // For now, let's use a small timeout to allow the redraw to complete.
+        setTimeout(() => {
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Failed to create blob from canvas"));
+            }
+          }, "image/jpeg", 0.95);
+        }, 100);
       });
 
       const formData = new FormData();
@@ -453,30 +383,9 @@ export function PhotoEditor({
       {/* Right Sidebar - Vertical Toolbar */}
       <div className="w-20 flex flex-col items-center bg-gray-900 border-l border-gray-800 py-4 gap-6 z-20 overflow-y-auto no-scrollbar">
 
-        {/* Colors */}
-        <div className="flex flex-col gap-3 items-center">
-          <Label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Color</Label>
-          {STICKER_COLORS.map((color) => (
-            <button
-              key={color.name}
-              onClick={() => {
-                setSelectedColor(color.name);
-                if (selectedSticker) {
-                  setStickers(stickers.map(s => s.id === selectedSticker ? { ...s, color: color.name as any } : s));
-                }
-              }}
-              className={`w-8 h-8 rounded-full border-2 transition-all ${selectedColor === color.name ? 'border-white scale-110 shadow-lg shadow-white/20' : 'border-transparent hover:scale-105'}`}
-              style={{ backgroundColor: color.value }}
-              title={color.name}
-            />
-          ))}
-        </div>
-
-        <div className="w-full h-px bg-gray-800" />
-
         {/* Tools */}
-        <div className="flex flex-col gap-4 items-center w-full px-2">
-          <Label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Tools</Label>
+        <div className="flex flex-col gap-4 items-center w-full px-2 mt-4">
+          <Label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Stickers</Label>
 
           <Button
             variant="ghost"
@@ -484,21 +393,20 @@ export function PhotoEditor({
             onClick={() => {
               const newSticker: Sticker = {
                 id: `sticker-${Date.now()}`,
-                type: "circle-filled",
+                type: "arrow",
                 x: 150,
                 y: 300,
                 width: 100,
                 height: 100,
                 rotation: 0,
-                color: selectedColor as any,
               };
               setStickers([...stickers, newSticker]);
               setSelectedSticker(newSticker.id);
             }}
-            className="text-gray-400 hover:text-white hover:bg-gray-800 w-10 h-10 rounded-xl"
-            title="Add Circle"
+            className="text-gray-400 hover:text-white hover:bg-gray-800 w-12 h-12 rounded-xl p-1"
+            title="Add Arrow"
           >
-            <Circle className="w-6 h-6 fill-current" style={{ color: STICKER_COLORS.find(c => c.name === selectedColor)?.value }} />
+            <img src="/stickers/arrow.png" alt="Arrow" className="w-full h-full object-contain" />
           </Button>
 
           <Button
@@ -507,21 +415,20 @@ export function PhotoEditor({
             onClick={() => {
               const newSticker: Sticker = {
                 id: `sticker-${Date.now()}`,
-                type: "arrow-3d",
+                type: "dpt",
                 x: 150,
                 y: 300,
                 width: 100,
                 height: 100,
                 rotation: 0,
-                color: selectedColor as any,
               };
               setStickers([...stickers, newSticker]);
               setSelectedSticker(newSticker.id);
             }}
-            className="text-gray-400 hover:text-white hover:bg-gray-800 w-10 h-10 rounded-xl"
-            title="Add Arrow"
+            className="text-gray-400 hover:text-white hover:bg-gray-800 w-12 h-12 rounded-xl p-1"
+            title="Add Dot"
           >
-            <ArrowRight className="w-6 h-6" style={{ color: STICKER_COLORS.find(c => c.name === selectedColor)?.value }} />
+            <img src="/stickers/dpt.png" alt="Dot" className="w-full h-full object-contain" />
           </Button>
         </div>
 

@@ -3,122 +3,57 @@ import io
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
 import math
+import os
 from . import schemas
 
-def create_arrow_sticker(w, h, color, outline_color, shadow_color):
-    # Create a high-res canvas for the sticker
-    img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    
-    # Dimensions
-    shaft_width = h * 0.4
-    head_width = h * 0.8
-    head_len = w * 0.4
-    
-    cy = h / 2
-    left = 0
-    right = w
-    
-    points = [
-        (left, cy - shaft_width/2), # Tail top
-        (right - head_len, cy - shaft_width/2), # Shaft top right
-        (right - head_len, cy - head_width/2), # Head top back
-        (right, cy), # Tip
-        (right - head_len, cy + head_width/2), # Head bottom back
-        (right - head_len, cy + shaft_width/2), # Shaft bottom right
-        (left, cy + shaft_width/2) # Tail bottom
-    ]
-    
-    # Draw shadow
-    shadow_offset = 4
-    shadow_points = [(x + shadow_offset, y + shadow_offset) for x, y in points]
-    draw.polygon(shadow_points, fill=shadow_color)
-    
-    # Draw outline (white)
-    outline_width = max(3, int(w / 25))
-    # To draw a proper outline for a polygon, we can draw a larger polygon behind
-    # But PIL's polygon outline is centered on the line.
-    draw.polygon(points, fill=color, outline=outline_color, width=outline_width)
-    
-    # 3D Highlight (simple line on top)
-    highlight_color = (255, 255, 255, 100)
-    draw.line([(left + outline_width, cy - shaft_width/2 + outline_width), 
-               (right - head_len - outline_width, cy - shaft_width/2 + outline_width)], 
-              fill=highlight_color, width=int(shaft_width/4))
-              
-    return img
-
-def create_circle_sticker(w, h, color, outline_color, shadow_color, filled=False):
-    img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    
-    shadow_offset = 4
-    outline_width = max(3, int(w / 25))
-    
-    # Shadow
-    draw.ellipse([shadow_offset, shadow_offset, w-outline_width, h-outline_width], fill=shadow_color)
-    
-    # Main circle
-    fill_color = (*color[:3], 180) if filled else None
-    draw.ellipse([0, 0, w-shadow_offset, h-shadow_offset], outline=color, fill=fill_color, width=max(4, int(w/15)))
-    
-    # White contour
-    # Inner and outer white strokes to create "sticker" look
-    draw.ellipse([0, 0, w-shadow_offset, h-shadow_offset], outline=outline_color, width=outline_width)
-    
-    return img
+# Path to stickers directory
+STICKERS_DIR = os.path.join(os.path.dirname(__file__), "assets", "stickers")
 
 def draw_sticker(base_img: Image.Image, sticker_data: Dict[str, Any]):
     # Extract data
-    s_type = sticker_data.get("type", "circle")
+    s_type = sticker_data.get("type", "arrow")
     x = sticker_data.get("x", 0)
     y = sticker_data.get("y", 0)
     w = int(sticker_data.get("width", 100))
     h = int(sticker_data.get("height", 100))
     rot = sticker_data.get("rotation", 0)
-    color_name = sticker_data.get("color", "red")
     
-    # Color mapping
-    colors = {
-        "red": (255, 50, 50),
-        "yellow": (255, 200, 0),
-        "green": (0, 255, 100),
-        "blue": (33, 150, 243),
-        "cyan": (0, 255, 255),
-        "gray": (128, 128, 128),
-        "black": (0, 0, 0)
-    }
-    base_color = colors.get(color_name, (255, 50, 50))
-    outline_color = (255, 255, 255)
-    shadow_color = (0, 0, 0, 100)
+    # Determine image filename
+    filename = "arrow.png" if s_type == "arrow" else "dpt.png"
+    filepath = os.path.join(STICKERS_DIR, filename)
     
-    sticker_img = None
-    
-    if s_type in ["arrow", "arrow-3d"]:
-        sticker_img = create_arrow_sticker(w, h, base_color, outline_color, shadow_color)
-    elif s_type in ["circle", "circle-filled"]:
-        sticker_img = create_circle_sticker(w, h, base_color, outline_color, shadow_color, filled=(s_type == "circle-filled"))
-    elif s_type == "crosshair":
-        # Reuse circle logic for now or implement specific
-        sticker_img = create_circle_sticker(w, h, base_color, outline_color, shadow_color)
+    if not os.path.exists(filepath):
+        print(f"Sticker file not found: {filepath}")
+        return
 
-    if sticker_img:
-        # Rotate
-        rotated = sticker_img.rotate(-rot, resample=Image.Resampling.BICUBIC, expand=True)
-        
-        # Calculate paste position (centered)
-        # The rotated image size might be different from original w,h
-        rw, rh = rotated.size
-        
-        # Original center was at x + w/2, y + h/2
-        cx = x + w/2
-        cy = y + h/2
-        
-        paste_x = int(cx - rw/2)
-        paste_y = int(cy - rh/2)
-        
-        # Paste with alpha composite
-        base_img.alpha_composite(rotated, (paste_x, paste_y))
+    try:
+        with Image.open(filepath) as sticker_img:
+            sticker_img = sticker_img.convert("RGBA")
+            
+            # Resize
+            # Use LANCZOS for high quality downscaling/upscaling
+            sticker_img = sticker_img.resize((w, h), resample=Image.Resampling.LANCZOS)
+            
+            # Rotate
+            # expand=True allows the image to grow to fit the rotated content
+            rotated = sticker_img.rotate(-rot, resample=Image.Resampling.BICUBIC, expand=True)
+            
+            # Calculate paste position (centered)
+            # The rotated image size might be different from original w,h
+            rw, rh = rotated.size
+            
+            # Original center was at x + w/2, y + h/2
+            cx = x + w/2
+            cy = y + h/2
+            
+            paste_x = int(cx - rw/2)
+            paste_y = int(cy - rh/2)
+            
+            # Paste with alpha composite
+            base_img.alpha_composite(rotated, (paste_x, paste_y))
+            
+    except Exception as e:
+        print(f"Error drawing sticker {s_type}: {e}")
 
 async def composite_image(
     image_data: bytes,

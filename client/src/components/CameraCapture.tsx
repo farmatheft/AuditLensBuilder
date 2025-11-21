@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { LocationPicker } from "@/components/LocationPicker";
-import type { Geolocation } from "@shared/schema";
+import type { Geolocation } from "@/types/schema";
 
 interface CameraCaptureProps {
   onCapture: (imageData: string, location: Geolocation | null, comment: string, capturedAt: string) => void;

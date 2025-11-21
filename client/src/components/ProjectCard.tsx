@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Folder, Camera } from "lucide-react";
-import type { Project } from "@shared/schema";
+import type { Project } from "@/types/schema";
 import { formatDistanceToNow } from "date-fns";
 
 interface ProjectCardProps {

@@ -1,7 +1,7 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.alias_generators import to_camel
 from typing import List, Optional, Literal, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 class CamelModel(BaseModel):
     model_config = ConfigDict(
@@ -9,6 +9,12 @@ class CamelModel(BaseModel):
         populate_by_name=True,
         from_attributes=True
     )
+
+    @field_validator('created_at', 'updated_at', check_fields=False)
+    def set_utc_timezone(cls, v):
+        if isinstance(v, datetime) and v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v
 
 class StickerBase(CamelModel):
     id: str

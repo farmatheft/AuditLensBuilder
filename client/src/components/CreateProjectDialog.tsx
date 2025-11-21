@@ -15,7 +15,7 @@ import { Plus } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { InsertProject } from "@shared/schema";
+import type { InsertProject } from "@/types/schema";
 
 export function CreateProjectDialog() {
   const [open, setOpen] = useState(false);

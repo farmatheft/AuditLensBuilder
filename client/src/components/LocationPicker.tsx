@@ -4,7 +4,7 @@ import { Icon, LatLng } from "leaflet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin, X } from "lucide-react";
-import type { Geolocation } from "@shared/schema";
+import type { Geolocation } from "@/types/schema";
 import "leaflet/dist/leaflet.css";
 
 // Fix for default marker icon

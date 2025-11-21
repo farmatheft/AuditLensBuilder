@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { CameraCapture } from "@/components/CameraCapture";
 import { PhotoEditor } from "@/components/PhotoEditor";
 import { useToast } from "@/hooks/use-toast";
-import type { Geolocation, Project } from "@shared/schema";
+import type { Geolocation, Project } from "@/types/schema";
 import { Loader2 } from "lucide-react";
 
 interface CameraPageProps {
@@ -40,6 +41,13 @@ export default function CameraPage({ params }: CameraPageProps) {
       description: "Photo uploaded successfully",
       className: "glass border-green-500/50 text-green-500",
     });
+
+    // Invalidate queries to refresh data
+    if (projectId && projectId !== "quick") {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "photos"] });
+    }
+
     setCapturedImage(null);
     setCapturedLocation(null);
     setComment("");

@@ -42,13 +42,23 @@ def create_photo(db: Session, photo: schemas.PhotoCreate, filename: str):
     # Pydantic model has stickers as List[StickerBase], we need to dump it to list of dicts
     stickers_data = [s.model_dump() for s in photo.stickers]
     
+    created_at = None
+    if photo.captured_at:
+        try:
+            from datetime import datetime
+            # captured_at is ISO string from frontend (e.g. 2023-11-21T08:30:00.000Z)
+            created_at = datetime.fromisoformat(photo.captured_at.replace('Z', '+00:00'))
+        except ValueError:
+            pass
+
     db_photo = models.Photo(
         project_id=photo.project_id,
         filename=filename,
         comment=photo.comment,
         latitude=photo.latitude,
         longitude=photo.longitude,
-        stickers=stickers_data
+        stickers=stickers_data,
+        created_at=created_at
     )
     db.add(db_photo)
     db.commit()

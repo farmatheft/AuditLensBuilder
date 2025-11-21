@@ -35,7 +35,8 @@ os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Serve static files from the built frontend - MUST BE LAST
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "dist", "public")
+# STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "dist", "public")
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "dist", "public")
 # if os.path.exists(STATIC_DIR):
 # Mount static assets (JS, CSS, images, etc.)
 app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")

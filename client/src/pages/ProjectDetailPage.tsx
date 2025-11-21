@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, MapPin, Trash2, Camera, Plus } from "lucide-react";
-import type { Project, Photo } from "@shared/schema";
+import type { Project, Photo } from "@/types/schema";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,7 +30,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   });
 
   const deletePhotoMutation = useMutation({
-    mutationFn: (photoId: number) => apiRequest("DELETE", `/api/photos/${photoId}`),
+    mutationFn: (photoId: string) => apiRequest("DELETE", `/api/photos/${photoId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "photos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] }); // Update photo count
