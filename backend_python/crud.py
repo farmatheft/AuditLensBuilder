@@ -30,8 +30,11 @@ def delete_project(db: Session, project_id: str):
         db.delete(db_project)
         db.commit()
 
-def get_photos(db: Session, project_id: str):
-    return db.query(models.Photo).filter(models.Photo.project_id == project_id).all()
+def get_photos(db: Session, project_id: str = None, skip: int = 0, limit: int = 100):
+    query = db.query(models.Photo)
+    if project_id:
+        query = query.filter(models.Photo.project_id == project_id)
+    return query.order_by(models.Photo.created_at.desc()).offset(skip).limit(limit).all()
 
 def get_photo(db: Session, photo_id: str):
     return db.query(models.Photo).filter(models.Photo.id == photo_id).first()
