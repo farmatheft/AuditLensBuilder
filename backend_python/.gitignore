@@ -1,0 +1,7 @@
+venv
+__pycache__
+routers/__pycache__
+.DS_Store
+uploads
+!uploads/.keep
+*.tar.gz
