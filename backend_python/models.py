@@ -32,3 +32,12 @@ class Photo(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     project = relationship("Project", back_populates="photos")
+
+class Packaging(Base):
+    __tablename__ = "packagings"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, nullable=False)
+    color = Column(String, nullable=False) # Stores the emoji(s)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

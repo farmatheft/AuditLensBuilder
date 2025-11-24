@@ -6,7 +6,7 @@ import os
 
 from . import models
 from .database import engine
-from .routers import projects, photos
+from .routers import projects, photos, packagings
 
 # Create tables
 models.Base.metadata.create_all(bind=engine)
@@ -25,6 +25,7 @@ app.add_middleware(
 # Include API routers FIRST - before any catch-all routes
 app.include_router(projects.router)
 app.include_router(photos.router)
+app.include_router(packagings.router)
 
 @app.get("/health")
 def health_check():

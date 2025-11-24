@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Camera, Home, Layers } from "lucide-react";
+import { Camera, Home, Layers, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -35,6 +35,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         onClick={() => setLocation("/gallery")}
                         icon={Layers}
                         label="Gallery"
+                    />
+                    <NavButton
+                        active={location === "/settings"}
+                        onClick={() => setLocation("/settings")}
+                        icon={Settings}
+                        label="Settings"
                     />
                 </nav>
             )}

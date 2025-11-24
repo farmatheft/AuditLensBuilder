@@ -67,3 +67,21 @@ export const insertPhotoSchema = z.object({
 // TypeScript types inferred from Zod schemas
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertPhoto = z.infer<typeof insertPhotoSchema>;
+
+export interface Packaging {
+    id: string;
+    name: string;
+    color: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface InsertPackaging {
+    name: string;
+    color: string;
+}
+
+export const insertPackagingSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    color: z.string().min(1, "Color is required"),
+});

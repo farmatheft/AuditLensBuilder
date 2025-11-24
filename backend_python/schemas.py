@@ -54,3 +54,15 @@ class Project(ProjectBase):
     created_at: datetime
     updated_at: datetime
     photos: List[Photo] = []
+
+class PackagingBase(CamelModel):
+    name: str
+    color: str
+
+class PackagingCreate(PackagingBase):
+    pass
+
+class Packaging(PackagingBase):
+    id: str
+    created_at: datetime
+    updated_at: datetime

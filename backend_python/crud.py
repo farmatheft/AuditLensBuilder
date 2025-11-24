@@ -70,3 +70,31 @@ def delete_photo(db: Session, photo_id: str):
     if db_photo:
         db.delete(db_photo)
         db.commit()
+
+def get_packagings(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Packaging).offset(skip).limit(limit).all()
+
+def get_packaging(db: Session, packaging_id: str):
+    return db.query(models.Packaging).filter(models.Packaging.id == packaging_id).first()
+
+def create_packaging(db: Session, packaging: schemas.PackagingCreate):
+    db_packaging = models.Packaging(**packaging.model_dump())
+    db.add(db_packaging)
+    db.commit()
+    db.refresh(db_packaging)
+    return db_packaging
+
+def update_packaging(db: Session, packaging_id: str, packaging: schemas.PackagingCreate):
+    db_packaging = get_packaging(db, packaging_id)
+    if db_packaging:
+        for key, value in packaging.model_dump().items():
+            setattr(db_packaging, key, value)
+        db.commit()
+        db.refresh(db_packaging)
+    return db_packaging
+
+def delete_packaging(db: Session, packaging_id: str):
+    db_packaging = get_packaging(db, packaging_id)
+    if db_packaging:
+        db.delete(db_packaging)
+        db.commit()

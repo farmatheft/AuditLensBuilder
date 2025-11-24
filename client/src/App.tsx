@@ -7,6 +7,7 @@ import ProjectsPage from "@/pages/ProjectsPage";
 import GalleryPage from "@/pages/GalleryPage";
 import ProjectDetailPage from "@/pages/ProjectDetailPage";
 import CameraPage from "@/pages/CameraPage";
+import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={ProjectsPage} />
       <Route path="/projects" component={ProjectsPage} />
       <Route path="/gallery" component={GalleryPage} />
+      <Route path="/settings" component={SettingsPage} />
       <Route path="/project/:id" component={ProjectDetailPage} />
       <Route path="/camera/:id" component={CameraPage} />
       {/* Add more routes as we build them */}
