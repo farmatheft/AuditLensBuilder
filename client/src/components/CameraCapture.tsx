@@ -6,8 +6,12 @@ import { Card } from "@/components/ui/card";
 import { LocationPicker } from "@/components/LocationPicker";
 import type { Geolocation } from "@/types/schema";
 
+import { PackagingSelector } from "@/components/PackagingSelector";
+import type { Packaging } from "@/types/schema";
+import { useQuery } from "@tanstack/react-query";
+
 interface CameraCaptureProps {
-  onCapture: (imageData: string, location: Geolocation | null, comment: string, capturedAt: string) => void;
+  onCapture: (imageData: string, location: Geolocation | null, comment: string, capturedAt: string, packagingId: string) => void;
   comment: string;
   onCommentChange: (comment: string) => void;
   projectName: string;
@@ -21,9 +25,12 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
   const [locationError, setLocationError] = useState<string>("");
   const [cameraError, setCameraError] = useState<string>("");
   const [isCapturing, setIsCapturing] = useState(false);
-  const [showCommentWarning, setShowCommentWarning] = useState(false);
-  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [selectedPackagingId, setSelectedPackagingId] = useState<string>(" ");
+
+  const { data: packagings } = useQuery<Packaging[]>({
+    queryKey: ["/api/packagings"],
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -81,11 +88,6 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
   }, []);
 
   const handleCaptureAttempt = () => {
-    if (!comment.trim()) {
-      setShowCommentWarning(true);
-      setPendingAction(() => capturePhoto);
-      return;
-    }
     capturePhoto();
   };
 
@@ -102,7 +104,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
       ctx.drawImage(videoRef.current, 0, 0);
       const imageData = canvas.toDataURL("image/jpeg", 0.95);
       const capturedAt = new Date().toISOString();
-      onCapture(imageData, location, comment, capturedAt);
+      onCapture(imageData, location, comment, capturedAt, selectedPackagingId);
     }
 
     setTimeout(() => setIsCapturing(false), 300);
@@ -122,36 +124,16 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
       reader.onload = (e) => {
         const imageData = e.target?.result as string;
         const capturedAt = new Date().toISOString();
-        onCapture(imageData, location, comment, capturedAt);
+        onCapture(imageData, location, comment, capturedAt, selectedPackagingId);
       };
       reader.readAsDataURL(file);
     };
-
-    if (!comment.trim()) {
-      setShowCommentWarning(true);
-      setPendingAction(() => processFile);
-      event.target.value = "";
-      return;
-    }
 
     processFile();
   };
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
-  };
-
-  const handleWarningOk = () => {
-    setShowCommentWarning(false);
-    if (pendingAction) {
-      pendingAction();
-      setPendingAction(null);
-    }
-  };
-
-  const handleWarningCancel = () => {
-    setShowCommentWarning(false);
-    setPendingAction(null);
   };
 
   return (
@@ -209,19 +191,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
         </div>
       </div>
 
-      {/* Comment Input Section */}
-      <div className="flex justify-center bg-black">
-        <div className="w-full max-w-[414px] px-4 py-3">
-          <input
-            type="text"
-            value={comment}
-            onChange={(e) => onCommentChange(e.target.value)}
-            placeholder="Enter comment..."
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg text-white text-base px-4 py-3 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-600"
-            data-testid="input-comment"
-          />
-        </div>
-      </div>
+
 
       {/* Action Buttons */}
       <div className="flex justify-center bg-black pb-6">
@@ -279,53 +249,6 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
         </div>
       </div>
 
-      {/* Premium Comment Warning Modal */}
-      {showCommentWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="relative max-w-md w-full">
-            {/* Glow Effect */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 rounded-3xl blur-2xl opacity-30 animate-[gradient-xy_3s_ease_infinite]"></div>
-
-            {/* Modal Content */}
-            <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-amber-500/30 rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 duration-300">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-amber-500 rounded-2xl blur-lg opacity-50"></div>
-                  <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center border border-amber-500/50">
-                    <svg className="w-7 h-7 text-amber-400 drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-white mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">No Comment Added</h3>
-                  <p className="text-gray-300 text-base leading-relaxed">
-                    You haven't added a comment. Do you want to continue without a comment?
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <Button
-                  onClick={handleWarningCancel}
-                  variant="outline"
-                  className="flex-1 h-12 text-base font-bold bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl transition-all duration-300"
-                >
-                  Cancel
-                </Button>
-                <div className="relative flex-1">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur opacity-50"></div>
-                  <Button
-                    onClick={handleWarningOk}
-                    className="relative w-full h-12 text-base font-bold bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-600 hover:via-emerald-700 hover:to-teal-700 text-white rounded-2xl shadow-lg shadow-emerald-500/40 transition-all duration-300 hover:shadow-emerald-500/60"
-                  >
-                    Continue
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Location Picker Modal */}
       {showLocationPicker && (

@@ -21,6 +21,7 @@ export default function CameraPage({ params }: CameraPageProps) {
   const [capturedLocation, setCapturedLocation] = useState<Geolocation | null>(null);
   const [comment, setComment] = useState("");
   const [capturedAt, setCapturedAt] = useState<string>("");
+  const [packagingId, setPackagingId] = useState<string>(" ");
   const { toast } = useToast();
 
   const { data: project, isLoading } = useQuery<Project>({
@@ -28,11 +29,12 @@ export default function CameraPage({ params }: CameraPageProps) {
     enabled: !!projectId && projectId !== "quick",
   });
 
-  const handleCapture = (imageData: string, location: Geolocation | null, commentText: string, timestamp: string) => {
+  const handleCapture = (imageData: string, location: Geolocation | null, commentText: string, timestamp: string, pkgId: string) => {
     setCapturedImage(imageData);
     setCapturedLocation(location);
     setComment(commentText);
     setCapturedAt(timestamp);
+    setPackagingId(pkgId);
   };
 
   const handleUploadComplete = () => {
@@ -52,6 +54,7 @@ export default function CameraPage({ params }: CameraPageProps) {
     setCapturedLocation(null);
     setComment("");
     setCapturedAt("");
+    setPackagingId(" ");
     if (projectId !== "quick") {
       setLocation(`/project/${projectId}`);
     } else {
@@ -81,6 +84,7 @@ export default function CameraPage({ params }: CameraPageProps) {
         projectId={projectId === "quick" ? "" : projectId}
         projectName={project?.name || "Quick Capture"}
         capturedAt={capturedAt}
+        packagingId={packagingId}
         onUploadComplete={handleUploadComplete}
         onCancel={handleCancel}
       />

@@ -2,6 +2,7 @@ node_modules
 backend_python/dist
 backend_python/venv
 backend_python/__pycache__
+backend_python/routers/__pycache__
 .DS_Store
 server/public
 uploads

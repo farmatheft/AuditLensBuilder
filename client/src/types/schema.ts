@@ -37,6 +37,7 @@ export interface Photo {
     longitude: number | null;
     stickers: Sticker[];
     createdAt: string;
+    packagingId?: string;
 }
 
 // Zod schemas for validation
@@ -62,6 +63,7 @@ export const insertPhotoSchema = z.object({
         rotation: z.number(),
     })).optional(),
     capturedAt: z.string().optional(),
+    packagingId: z.string().optional(),
 });
 
 // TypeScript types inferred from Zod schemas

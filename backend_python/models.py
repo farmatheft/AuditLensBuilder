@@ -30,8 +30,10 @@ class Photo(Base):
     longitude = Column(Float, nullable=True)
     stickers = Column(JSON, default=list)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    packaging_id = Column(String, ForeignKey("packagings.id"), nullable=True)
 
     project = relationship("Project", back_populates="photos")
+    packaging = relationship("Packaging")
 
 class Packaging(Base):
     __tablename__ = "packagings"

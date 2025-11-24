@@ -62,11 +62,14 @@ async def composite_image(
     latitude: float | None,
     longitude: float | None,
     project_name: str,
-    captured_at: str | None
+    captured_at: str | None,
+    packaging_info: Dict[str, str] | None = None,
+    hide_date: bool = False
 ) -> bytes:
     
     # Load image
     with Image.open(io.BytesIO(image_data)) as img:
+        # ... (rest of the function setup)
         # Convert to RGBA for compositing
         img = img.convert("RGBA")
         width, height = img.size
@@ -91,7 +94,7 @@ async def composite_image(
             except IOError:
                  # Fallback for linux/docker if needed, or just default
                 font = ImageFont.load_default()
-
+        
         # Helper to draw text box
         def draw_text_box(text_content: str, bottom_y: int, align: str = "left"):
             # Calculate text size
@@ -121,7 +124,7 @@ async def composite_image(
         current_y = height
         
         # 1. Timestamp (Bottom - drawn first)
-        if captured_at:
+        if captured_at and not hide_date:
             try:
                 dt = datetime.fromisoformat(captured_at.replace('Z', '+00:00'))
                 ts_str = dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -131,10 +134,18 @@ async def composite_image(
             h_used = draw_text_box(ts_str, current_y, align="right")
             current_y -= h_used
 
-        # 2. Project & Comment (Middle)
-        comment_text = f"{project_name}"
+        # 2. Project & Comment & Packaging (Middle)
+        # Format: Project Name - [Emoji Packaging Name] - Comment
+        comment_parts = [project_name]
+        
+        if packaging_info:
+            pkg_str = f"{packaging_info['color']} {packaging_info['name']}"
+            comment_parts.append(pkg_str)
+            
         if comment:
-            comment_text += f" - {comment}"
+            comment_parts.append(comment)
+            
+        comment_text = " - ".join(comment_parts)
             
         h_used = draw_text_box(comment_text, current_y, align="left")
         current_y -= h_used

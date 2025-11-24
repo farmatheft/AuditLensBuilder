@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { LocationPicker } from "@/components/LocationPicker";
-import type { Sticker, Geolocation } from "@/types/schema";
+import { PackagingSelector } from "@/components/PackagingSelector";
+import type { Sticker, Geolocation, Packaging } from "@/types/schema";
+import { useQuery } from "@tanstack/react-query";
 
 interface PhotoEditorProps {
   imageData: string;
@@ -14,6 +16,7 @@ interface PhotoEditorProps {
   projectId: string;
   projectName: string;
   capturedAt: string;
+  packagingId?: string;
   onUploadComplete: () => void;
   onCancel: () => void;
 }
@@ -25,6 +28,7 @@ export function PhotoEditor({
   projectId,
   projectName,
   capturedAt,
+  packagingId: initialPackagingId,
   onUploadComplete,
   onCancel,
 }: PhotoEditorProps) {
@@ -40,6 +44,12 @@ export function PhotoEditor({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [hideDate, setHideDate] = useState(false);
+  const [selectedPackagingId, setSelectedPackagingId] = useState<string>(initialPackagingId || " ");
+
+  const { data: packagings } = useQuery<Packaging[]>({
+    queryKey: ["/api/packagings"],
+  });
 
   // Preload sticker images
   const arrowImgRef = useRef<HTMLImageElement | null>(null);
@@ -262,6 +272,8 @@ export function PhotoEditor({
         formData.append("longitude", currentLocation.longitude.toString());
       }
       formData.append("stickers", JSON.stringify(stickers));
+      formData.append("packaging_id", selectedPackagingId);
+      formData.append("hide_date", hideDate.toString());
 
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener("progress", (e) => {
@@ -360,16 +372,19 @@ export function PhotoEditor({
               {currentLocation ? `${currentLocation.latitude.toFixed(4)}, ${currentLocation.longitude.toFixed(4)}` : "No location - click to set"}
             </button>
             <div>
-              {new Date(capturedAt).toLocaleString('en-CA', {
+              {!hideDate && new Date(capturedAt).toLocaleString('en-CA', {
                 year: 'numeric', month: '2-digit', day: '2-digit',
                 hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
               }).replace(',', '')}
             </div>
           </div>
-
           {/* Comment Input */}
           <div className="px-4 py-3 flex items-center gap-3">
             <span className="text-sm font-bold text-white whitespace-nowrap">{projectName}</span>
+            <PackagingSelector
+              value={selectedPackagingId}
+              onChange={setSelectedPackagingId}
+            />
             <Input
               value={currentComment}
               onChange={(e) => setCurrentComment(e.target.value)}
@@ -386,6 +401,23 @@ export function PhotoEditor({
         {/* Tools */}
         <div className="flex flex-col gap-4 items-center w-full px-2 mt-4">
           <Label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Stickers</Label>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setHideDate(!hideDate)}
+            className={`w-12 h-12 rounded-xl p-1 transition-colors ${hideDate ? "bg-blue-500/20 text-blue-400" : "text-gray-400 hover:text-white hover:bg-gray-800"}`}
+            title={hideDate ? "Show Date" : "Hide Date"}
+          >
+            <div className="flex flex-col items-center justify-center">
+              <span className="text-[10px] font-bold">DATE</span>
+              {hideDate ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              )}
+            </div>
+          </Button>
 
           <Button
             variant="ghost"

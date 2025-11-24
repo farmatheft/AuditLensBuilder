@@ -36,11 +36,13 @@ class PhotoBase(CamelModel):
 class PhotoCreate(PhotoBase):
     project_id: str
     captured_at: Optional[str] = None
+    packaging_id: Optional[str] = None
 
 class Photo(PhotoBase):
     id: str
     project_id: str
     created_at: datetime
+    packaging_id: Optional[str] = None
 
 class ProjectBase(CamelModel):
     name: str

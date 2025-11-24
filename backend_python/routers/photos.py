@@ -35,6 +35,8 @@ async def create_photo(
     longitude: Optional[float] = Form(None),
     stickers: Optional[str] = Form(None), # JSON string
     captured_at: Optional[str] = Form(None),
+    packaging_id: Optional[str] = Form(None),
+    hide_date: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     # Validate project exists
@@ -44,6 +46,13 @@ async def create_photo(
 
     # Use project_title if provided, otherwise use project name from DB
     display_name = project_title or project.name
+
+    # Get packaging info if provided
+    packaging_info = None
+    if packaging_id and packaging_id.strip() and packaging_id != " ":
+        packaging = crud.get_packaging(db, packaging_id)
+        if packaging:
+            packaging_info = {"name": packaging.name, "color": packaging.color}
 
     # Parse stickers
     stickers_list = []
@@ -57,6 +66,8 @@ async def create_photo(
     content = await photo.read()
     
     # Process image (Composite)
+    should_hide_date = hide_date.lower() == 'true' if hide_date else False
+    
     processed_image_data = await composite_image(
         content,
         comment,
@@ -64,7 +75,9 @@ async def create_photo(
         latitude,
         longitude,
         display_name,
-        captured_at
+        captured_at,
+        packaging_info,
+        should_hide_date
     )
     
     # Save to disk
@@ -93,7 +106,8 @@ async def create_photo(
         latitude=latitude,
         longitude=longitude,
         stickers=sticker_objs,
-        captured_at=captured_at
+        captured_at=captured_at,
+        packaging_id=packaging_id if packaging_id and packaging_id.strip() and packaging_id != " " else None
     )
     
     return crud.create_photo(db=db, photo=photo_create, filename=filename)
