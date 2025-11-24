@@ -1,0 +1,96 @@
+/* Override UI component backgrounds to be solid white/dark */
+
+/* Toast notifications - solid background */
+[data-sonner-toast] {
+    background: hsl(var(--background)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    opacity: 1 !important;
+}
+
+[data-sonner-toast][data-styled="true"] {
+    background: hsl(var(--background)) !important;
+}
+
+/* Select dropdown - solid background */
+[role="listbox"],
+[data-radix-select-content],
+.select-content {
+    background: hsl(var(--background)) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+}
+
+/* Dialog/Modal - solid background */
+[role="dialog"],
+[data-radix-dialog-content],
+.dialog-content {
+    background: hsl(var(--background)) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+}
+
+/* Alert Dialog - solid background */
+[role="alertdialog"],
+[data-radix-alert-dialog-content],
+.alert-dialog-content {
+    background: hsl(var(--background)) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+}
+
+/* Popover - solid background */
+[role="menu"],
+[data-radix-popover-content],
+.popover-content {
+    background: hsl(var(--background)) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+}
+
+/* Dropdown menu - solid background */
+[data-radix-dropdown-menu-content],
+.dropdown-menu-content {
+    background: hsl(var(--background)) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+}
+
+/* Remove any backdrop blur effects */
+.backdrop-blur,
+.backdrop-blur-sm,
+.backdrop-blur-md,
+.backdrop-blur-lg {
+    backdrop-filter: none !important;
+}
+
+/* Ensure overlays have proper background */
+[data-radix-dialog-overlay],
+[data-radix-alert-dialog-overlay] {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Make sure text is readable */
+[role="dialog"] *,
+[role="alertdialog"] *,
+[role="menu"] *,
+[role="listbox"] * {
+    color: hsl(var(--foreground));
+}
+
+/* Specific fixes for shadcn components */
+.bg-background {
+    background-color: hsl(var(--background)) !important;
+    opacity: 1 !important;
+}
+
+.bg-popover {
+    background-color: hsl(var(--popover)) !important;
+    opacity: 1 !important;
+}
+
+/* Remove transparency from card backgrounds in dialogs */
+[role="dialog"] .bg-card,
+[role="alertdialog"] .bg-card {
+    background-color: hsl(var(--card)) !important;
+    opacity: 1 !important;
+}

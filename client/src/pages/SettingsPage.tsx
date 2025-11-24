@@ -4,6 +4,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     Dialog,
     DialogContent,
@@ -28,16 +29,18 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Packaging, InsertPackaging } from "@/types/schema";
 import { cn } from "@/lib/utils";
+import { useTranslation, languages } from "@/i18n";
 
 const EMOJI_OPTIONS = [
     "🟥", "🟧", "🟨", "🟩", "🟦", "🟪", "⬛️", "⬜️", "🟨🟩", "🔲", "▫️"
 ];
 
 export default function SettingsPage() {
+    const { t, language, setLanguage } = useTranslation();
     const { data: packagings, isLoading } = useQuery<Packaging[]>({
         queryKey: ["/api/packagings"],
     });
@@ -108,6 +111,36 @@ export default function SettingsPage() {
                             ))}
                         </div>
                     )}
+                </section>
+
+                {/* Language Settings */}
+                <section className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Globe className="w-5 h-5 text-primary" />
+                            <h2 className="text-2xl font-bold">Language</h2>
+                        </div>
+                    </div>
+                    <div className="bg-card border rounded-xl shadow-sm p-4">
+                        <Label htmlFor="language-select" className="text-sm font-medium mb-2 block">
+                            Select your preferred language
+                        </Label>
+                        <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
+                            <SelectTrigger id="language-select" className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {languages.map((lang) => (
+                                    <SelectItem key={lang.code} value={lang.code}>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-lg">{lang.flag}</span>
+                                            <span>{lang.name}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </section>
             </div>
 
