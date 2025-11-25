@@ -123,5 +123,18 @@ export default {
         confirm: "Confirm",
         edit: "Edit",
         add: "Add"
+    },
+
+    packagings: {
+        builtin: {
+            black: "Black",
+            blue: "Blue",
+            green: "Green",
+            grey: "Grey",
+            red: "Red",
+            stripes: "Stripes",
+            white: "White",
+            yellow: "Yellow"
+        }
     }
 };

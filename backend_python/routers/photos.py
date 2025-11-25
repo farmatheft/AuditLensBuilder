@@ -50,9 +50,22 @@ async def create_photo(
     # Get packaging info if provided
     packaging_info = None
     if packaging_id and packaging_id.strip() and packaging_id != " ":
-        packaging = crud.get_packaging(db, packaging_id)
-        if packaging:
-            packaging_info = {"name": packaging.name, "color": packaging.color}
+        if packaging_id.startswith("builtin:"):
+            filename = packaging_id.split(":", 1)[1]
+            name = os.path.splitext(filename)[0].capitalize()
+            packaging_info = {
+                "name": name,
+                "color": filename,
+                "type": "builtin"
+            }
+        else:
+            packaging = crud.get_packaging(db, packaging_id)
+            if packaging:
+                packaging_info = {
+                    "name": packaging.name,
+                    "color": packaging.color,
+                    "type": "custom"
+                }
 
     # Parse stickers
     stickers_list = []

@@ -114,5 +114,18 @@ export default {
         confirm: "Підтвердити",
         edit: "Редагувати",
         add: "Додати"
+    },
+
+    packagings: {
+        builtin: {
+            black: "Чорний",
+            blue: "Синій",
+            green: "Зелений",
+            grey: "Сірий",
+            red: "Червоний",
+            stripes: "Смугастий",
+            white: "Білий",
+            yellow: "Жовтий"
+        }
     }
 };

@@ -42,6 +42,11 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "dist", "public")
 # Mount static assets (JS, CSS, images, etc.)
 app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
 
+# Mount packages directory (custom and builtin images)
+packages_dir = os.path.join(os.path.dirname(__file__), "assets", "packages")
+if os.path.exists(packages_dir):
+    app.mount("/assets/packages", StaticFiles(directory=packages_dir), name="packages")
+
 # Catch-all route for SPA - MUST BE ABSOLUTELY LAST
 # This will only match routes that haven't been matched by API routers above
 @app.get("/{full_path:path}")

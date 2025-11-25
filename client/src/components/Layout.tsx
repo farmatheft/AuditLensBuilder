@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Camera, Home, Layers, Settings } from "lucide-react";
+import { Home, Layers, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -22,14 +22,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         icon={Home}
                         label="Projects"
                     />
-                    <div className="relative -top-6">
-                        <button
-                            onClick={() => setLocation("/camera/quick")}
-                            className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/40 hover:scale-105 transition-transform active:scale-95"
-                        >
-                            <Camera className="w-7 h-7" />
-                        </button>
-                    </div>
+
                     <NavButton
                         active={location === "/gallery"}
                         onClick={() => setLocation("/gallery")}

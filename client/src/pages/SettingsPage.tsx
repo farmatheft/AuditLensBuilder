@@ -35,10 +35,6 @@ import type { Packaging, InsertPackaging } from "@/types/schema";
 import { cn } from "@/lib/utils";
 import { useTranslation, languages } from "@/i18n";
 
-const EMOJI_OPTIONS = [
-    "🟥", "🟧", "🟨", "🟩", "🟦", "🟪", "⬛️", "⬜️", "🟨🟩", "🔲", "▫️"
-];
-
 export default function SettingsPage() {
     const { t, language, setLanguage } = useTranslation();
     const { data: packagings, isLoading } = useQuery<Packaging[]>({
@@ -90,8 +86,17 @@ export default function SettingsPage() {
                                     className="flex items-center justify-between p-4 bg-card border rounded-xl shadow-sm"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="text-2xl bg-secondary/50 w-12 h-12 flex items-center justify-center rounded-lg">
-                                            {pkg.color}
+                                        <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary/50 p-2">
+                                            <img
+                                                src={`/assets/packages/custom/${pkg.color}`}
+                                                alt={pkg.name}
+                                                className="w-full h-full object-contain"
+                                                onError={(e) => {
+                                                    // Fallback if image not found (e.g. old emoji data)
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                    (e.target as HTMLImageElement).parentElement!.innerText = pkg.color;
+                                                }}
+                                            />
                                         </div>
                                         <div>
                                             <h3 className="font-medium">{pkg.name}</h3>
@@ -202,7 +207,11 @@ function PackagingDialog({
 }) {
     const { toast } = useToast();
     const [name, setName] = useState("");
-    const [color, setColor] = useState(EMOJI_OPTIONS[0]);
+    const [color, setColor] = useState(""); // This now stores the filename
+
+    const { data: customAssets } = useQuery<string[]>({
+        queryKey: ["/api/packagings/custom-assets"],
+    });
 
     useEffect(() => {
         if (open) {
@@ -211,10 +220,15 @@ function PackagingDialog({
                 setColor(initialData.color);
             } else {
                 setName("");
-                setColor(EMOJI_OPTIONS[0]);
+                // Set default to first asset if available
+                if (customAssets && customAssets.length > 0) {
+                    setColor(customAssets[0]);
+                } else {
+                    setColor("");
+                }
             }
         }
-    }, [open, initialData]);
+    }, [open, initialData, customAssets]);
 
     const mutation = useMutation({
         mutationFn: async (data: InsertPackaging) => {
@@ -264,30 +278,43 @@ function PackagingDialog({
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>Color / Icon</Label>
+                        <Label>Icon</Label>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
-                                    className="w-full h-12 text-2xl justify-start px-4"
+                                    className="w-full h-16 justify-start px-4"
                                     type="button"
                                 >
-                                    {color}
+                                    {color ? (
+                                        <img
+                                            src={`/assets/packages/custom/${color}`}
+                                            alt="Selected"
+                                            className="h-10 w-10 object-contain mr-2"
+                                        />
+                                    ) : (
+                                        <span className="text-muted-foreground">Select Icon</span>
+                                    )}
+                                    <span className="ml-2">{color}</span>
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-64 p-2">
-                                <div className="grid grid-cols-4 gap-2">
-                                    {EMOJI_OPTIONS.map((emoji) => (
+                            <PopoverContent className="w-80 p-2">
+                                <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto">
+                                    {customAssets?.map((asset) => (
                                         <button
-                                            key={emoji}
+                                            key={asset}
                                             type="button"
-                                            onClick={() => setColor(emoji)}
+                                            onClick={() => setColor(asset)}
                                             className={cn(
-                                                "text-2xl h-10 w-10 flex items-center justify-center rounded hover:bg-secondary transition-colors",
-                                                color === emoji && "bg-secondary ring-2 ring-primary"
+                                                "h-16 w-16 flex items-center justify-center rounded hover:bg-secondary transition-colors p-2 border",
+                                                color === asset && "bg-secondary ring-2 ring-primary border-primary"
                                             )}
                                         >
-                                            {emoji}
+                                            <img
+                                                src={`/assets/packages/custom/${asset}`}
+                                                alt={asset}
+                                                className="w-full h-full object-contain"
+                                            />
                                         </button>
                                     ))}
                                 </div>
@@ -298,7 +325,7 @@ function PackagingDialog({
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={mutation.isPending || !name.trim()}>
+                        <Button type="submit" disabled={mutation.isPending || !name.trim() || !color}>
                             {mutation.isPending ? "Saving..." : "Save"}
                         </Button>
                     </DialogFooter>
