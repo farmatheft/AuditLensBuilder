@@ -36,7 +36,7 @@ export function PhotoEditor({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
-  const [placingSticker, setPlacingSticker] = useState<"arrow" | "dpt" | null>(null);
+  const [placingSticker, setPlacingSticker] = useState<"arrow" | "dpt" | "packaging" | null>(null);
   const [currentComment, setCurrentComment] = useState(initialComment);
   const [currentLocation, setCurrentLocation] = useState<Geolocation | null>(location);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
@@ -56,6 +56,7 @@ export function PhotoEditor({
   // Preload sticker images
   const arrowImgRef = useRef<HTMLImageElement | null>(null);
   const dptImgRef = useRef<HTMLImageElement | null>(null);
+  const packagingImagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   useEffect(() => {
     const arrow = new Image();
@@ -80,6 +81,17 @@ export function PhotoEditor({
     }
   }, [stickers, selectedSticker, currentComment, imageLoaded]);
 
+  // Sync packaging sticker when selectedPackagingId changes
+  useEffect(() => {
+    const packagingSticker = stickers.find(s => s.type === "packaging");
+    if (packagingSticker && selectedPackagingId && selectedPackagingId !== " ") {
+      // Update the packaging sticker's packagingId
+      setStickers(stickers.map(s =>
+        s.type === "packaging" ? { ...s, packagingId: selectedPackagingId } : s
+      ));
+    }
+  }, [selectedPackagingId]);
+
   const redrawCanvas = (overrideSelectedSticker?: string | null) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -102,13 +114,39 @@ export function PhotoEditor({
         ctx.rotate((sticker.rotation * Math.PI) / 180);
         ctx.translate(-centerX, -centerY);
 
-        const stickerImg = sticker.type === "arrow" ? arrowImgRef.current : dptImgRef.current;
+        let stickerImg: HTMLImageElement | null = null;
+
+        if (sticker.type === "arrow") {
+          stickerImg = arrowImgRef.current;
+        } else if (sticker.type === "dpt") {
+          stickerImg = dptImgRef.current;
+        } else if (sticker.type === "packaging" && sticker.packagingId) {
+          // Load packaging image dynamically
+          const packagingId = sticker.packagingId;
+          if (!packagingImagesRef.current.has(packagingId)) {
+            const img = new Image();
+            const isBuiltin = packagingId.startsWith("builtin:");
+            const filename = isBuiltin ? packagingId.split(":")[1] : "";
+
+            if (isBuiltin && filename) {
+              img.src = `/assets/packages/builtin/${filename}`;
+            } else {
+              // For custom packaging, need to get the filename from packagings data
+              const pkg = packagings?.find(p => p.id === packagingId);
+              if (pkg) {
+                img.src = `/assets/packages/custom/${pkg.color}`;
+              }
+            }
+            packagingImagesRef.current.set(packagingId, img);
+          }
+          stickerImg = packagingImagesRef.current.get(packagingId) || null;
+        }
 
         if (stickerImg && stickerImg.complete) {
           ctx.drawImage(stickerImg, sticker.x, sticker.y, sticker.width, sticker.height);
         } else {
-          // Fallback if image not loaded yet (shouldn't happen often with preloading)
-          ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+          // Fallback if image not loaded yet
+          ctx.fillStyle = "rgba(200, 200, 200, 0.5)";
           ctx.fillRect(sticker.x, sticker.y, sticker.width, sticker.height);
         }
 
@@ -485,6 +523,41 @@ export function PhotoEditor({
           >
             <img src="/stickers/dpt.png" alt="Dot" className="w-full h-full object-contain" />
           </Button>
+
+          {/* Packaging Sticker - Only show if packaging is selected and no packaging sticker exists */}
+          {selectedPackagingId && selectedPackagingId !== " " && !stickers.some(s => s.type === "packaging") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                const newSticker: Sticker = {
+                  id: `sticker-packaging-${Date.now()}`,
+                  type: "packaging",
+                  x: 150,
+                  y: 450,
+                  width: 120,
+                  height: 120,
+                  rotation: 0,
+                  packagingId: selectedPackagingId,
+                };
+                setStickers([...stickers, newSticker]);
+                setSelectedSticker(newSticker.id);
+              }}
+              className="text-gray-400 hover:text-white hover:bg-gray-800 w-12 h-12 rounded-xl p-1"
+              title="Add Packaging Sticker"
+            >
+              {/* Show the packaging image */}
+              <img
+                src={
+                  selectedPackagingId.startsWith("builtin:")
+                    ? `/assets/packages/builtin/${selectedPackagingId.split(":")[1]}`
+                    : `/assets/packages/custom/${packagings?.find(p => p.id === selectedPackagingId)?.color}`
+                }
+                alt="Packaging"
+                className="w-full h-full object-contain"
+              />
+            </Button>
+          )}
         </div>
 
         {/* Context Actions (Only when sticker selected) */}
@@ -557,16 +630,18 @@ export function PhotoEditor({
       </div>
 
       {/* Location Picker Modal */}
-      {showLocationPicker && (
-        <LocationPicker
-          initialLocation={currentLocation}
-          onSave={(newLocation) => {
-            setCurrentLocation(newLocation);
-            setShowLocationPicker(false);
-          }}
-          onCancel={() => setShowLocationPicker(false)}
-        />
-      )}
-    </div>
+      {
+        showLocationPicker && (
+          <LocationPicker
+            initialLocation={currentLocation}
+            onSave={(newLocation) => {
+              setCurrentLocation(newLocation);
+              setShowLocationPicker(false);
+            }}
+            onCancel={() => setShowLocationPicker(false)}
+          />
+        )
+      }
+    </div >
   );
 }
