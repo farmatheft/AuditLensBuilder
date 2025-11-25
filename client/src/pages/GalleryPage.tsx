@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Camera } from "lucide-react";
 import type { Photo } from "@/types/schema";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "@/i18n";
 
 export default function GalleryPage() {
     const [, setLocation] = useLocation();
+    const { t } = useTranslation();
 
     const { data: photos, isLoading } = useQuery<Photo[]>({
         queryKey: ["/api/photos"],
@@ -17,7 +19,7 @@ export default function GalleryPage() {
     if (isLoading) {
         return (
             <div className="container mx-auto p-4 pb-24">
-                <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Gallery</h1>
+                <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">{t('gallery.title')}</h1>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {[...Array(8)].map((_, i) => (
                         <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
@@ -31,7 +33,7 @@ export default function GalleryPage() {
 
     return (
         <div className="container mx-auto p-4 pb-24">
-            <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Gallery</h1>
+            <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">{t('gallery.title')}</h1>
 
             {hasPhotos ? (
                 <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
@@ -64,7 +66,7 @@ export default function GalleryPage() {
 
                             {photo.stickers && Array.isArray(photo.stickers) && photo.stickers.length > 0 && (
                                 <Badge variant="secondary" className="absolute top-2 right-2 text-[10px] h-5 px-1.5 bg-black/50 text-white border-none backdrop-blur-sm">
-                                    {photo.stickers.length} stickers
+                                    {photo.stickers.length} {t('projectDetail.stickers')}
                                 </Badge>
                             )}
                         </div>
@@ -75,15 +77,15 @@ export default function GalleryPage() {
                     <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                         <Camera className="w-8 h-8 text-primary" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-2">No photos yet</h3>
+                    <h3 className="text-xl font-semibold mb-2">{t('gallery.noPhotos')}</h3>
                     <p className="text-muted-foreground mb-6">
-                        Start capturing moments to see them here.
+                        {t('gallery.noPhotosDesc')}
                     </p>
                     <button
                         onClick={() => setLocation("/camera/quick")}
                         className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                     >
-                        Take First Photo
+                        {t('projectDetail.takePhoto')}
                     </button>
                 </Card>
             )}

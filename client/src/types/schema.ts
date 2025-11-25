@@ -3,12 +3,13 @@ import { z } from "zod";
 // Sticker type definition
 export interface Sticker {
     id: string;
-    type: "arrow" | "dpt";
+    type: "arrow" | "dpt" | "packaging";
     x: number;
     y: number;
     width: number;
     height: number;
     rotation: number;
+    packagingId?: string; // For packaging stickers
 }
 
 // Geolocation type

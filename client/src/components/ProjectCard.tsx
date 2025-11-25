@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Folder, Camera } from "lucide-react";
 import type { Project } from "@/types/schema";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "@/i18n";
 
 interface ProjectCardProps {
   project: Project & { photoCount: number };
@@ -10,6 +11,8 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, onClick }: ProjectCardProps) {
+  const { t } = useTranslation();
+
   return (
     <Card
       className="hover-elevate active-elevate-2 cursor-pointer transition-all"
@@ -31,7 +34,7 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
           <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{project.description}</p>
         )}
         <p className="text-xs text-muted-foreground">
-          Updated {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
+          {t('common.updated')} {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
         </p>
       </CardContent>
     </Card>

@@ -118,14 +118,14 @@ export default {
 
     packagings: {
         builtin: {
-            black: "Чорний",
-            blue: "Синій",
-            green: "Зелений",
-            grey: "Сірий",
-            red: "Червоний",
+            black: "Чорна ізо",
+            blue: "Синя ізо",
+            green: "Зелена ізо",
+            grey: "Сіра ізо",
+            red: "Червона ізо",
             stripes: "Смугастий",
-            white: "Білий",
-            yellow: "Жовтий"
+            white: "Біла ізо",
+            yellow: "Жовта ізо"
         }
     }
 };

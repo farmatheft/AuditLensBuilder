@@ -5,10 +5,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { LocationPicker } from "@/components/LocationPicker";
 import type { Geolocation } from "@/types/schema";
-
 import { PackagingSelector } from "@/components/PackagingSelector";
 import type { Packaging } from "@/types/schema";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "@/i18n";
 
 interface CameraCaptureProps {
   onCapture: (imageData: string, location: Geolocation | null, comment: string, capturedAt: string, packagingId: string) => void;
@@ -27,6 +27,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
   const [isCapturing, setIsCapturing] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [selectedPackagingId, setSelectedPackagingId] = useState<string>(" ");
+  const { t } = useTranslation();
 
   const { data: packagings } = useQuery<Packaging[]>({
     queryKey: ["/api/packagings"],
@@ -49,7 +50,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
         }
       } catch (err) {
         console.error("Camera access error:", err);
-        setCameraError("Camera not available");
+        setCameraError(t('camera.cameraNotAvailable'));
       }
     };
 
@@ -85,7 +86,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [t]);
 
   const handleCaptureAttempt = () => {
     capturePhoto();
@@ -146,7 +147,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
               <div className="text-center p-6">
                 <Camera className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-400 text-sm">{cameraError}</p>
-                <p className="text-gray-500 text-xs mt-2">You can still upload from gallery</p>
+                <p className="text-gray-500 text-xs mt-2">{t('camera.uploadFromGallery')}</p>
               </div>
             </div>
           ) : (
@@ -184,7 +185,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
             ) : (
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Acquiring GPS...</span>
+                <span className="text-sm">{t('camera.acquiringGPS')}</span>
               </div>
             )}
           </button>
@@ -203,7 +204,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
             className="text-white hover:bg-gray-900"
             data-testid="button-back"
           >
-            Back
+            {t('camera.back')}
           </Button>
 
           {/* Center Buttons */}
@@ -235,7 +236,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
             variant="ghost"
             className="text-white hover:bg-gray-900 invisible"
           >
-            Publish
+            {t('photoEditor.publish')}
           </Button>
 
           <input

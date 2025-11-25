@@ -16,6 +16,7 @@ import type { Project, Photo } from "@/types/schema";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useTranslation } from "@/i18n";
 
 interface ProjectDetailPageProps {
   params: {
@@ -27,6 +28,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const projectId = params.id;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -52,8 +54,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "photos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] }); // Update photo count
       toast({
-        title: "Photo deleted",
-        description: "The photo has been permanently deleted.",
+        title: t('toasts.photoDeleted'),
+        description: t('toasts.photoDeletedDesc'),
       });
     },
   });
@@ -66,8 +68,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       setShowEditDialog(false);
       toast({
-        title: "Project updated",
-        description: "The project has been successfully updated.",
+        title: t('toasts.projectUpdated'),
+        description: t('toasts.projectUpdatedDesc'),
       });
     },
   });
@@ -82,14 +84,14 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
-        title: "Project deleted",
-        description: "The project has been permanently deleted.",
+        title: t('toasts.projectDeleted'),
+        description: t('toasts.projectDeletedDesc'),
       });
       setLocation("/projects");
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t('toasts.error'),
         description: error.message || "Failed to delete project",
         variant: "destructive",
       });
@@ -117,7 +119,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     return (
       <div className="container mx-auto p-4 text-center pt-20">
         <h2 className="text-2xl font-bold mb-4">Project not found</h2>
-        <Button onClick={() => setLocation("/projects")}>Return to Projects</Button>
+        <Button onClick={() => setLocation("/projects")}>{t('projectDetail.backToProjects')}</Button>
       </div>
     );
   }
@@ -134,7 +136,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           onClick={() => setLocation("/projects")}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Projects
+          {t('projectDetail.backToProjects')}
         </Button>
 
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -148,11 +150,11 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
             <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                Created {new Date(project.createdAt).toLocaleDateString()}
+                {t('projects.createdOn')} {new Date(project.createdAt).toLocaleDateString()}
               </span>
               <span className="flex items-center gap-1">
                 <Camera className="w-4 h-4" />
-                {photos?.length || 0} photos
+                {photos?.length || 0} {t('projects.photoCount')}
               </span>
             </div>
           </div>
@@ -181,7 +183,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               className="shadow-lg shadow-primary/20"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add Photo
+              {t('projects.addPhoto')}
             </Button>
           </div>
         </div>
@@ -228,7 +230,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 className="absolute top-2 right-2 w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (confirm("Are you sure you want to delete this photo?")) {
+                  if (confirm(t('projectDetail.deletePhotoConfirm'))) {
                     deletePhotoMutation.mutate(photo.id);
                   }
                 }}
@@ -238,7 +240,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
               {photo.stickers && Array.isArray(photo.stickers) && photo.stickers.length > 0 && (
                 <Badge variant="secondary" className="absolute top-2 left-2 text-[10px] h-5 px-1.5 bg-black/50 text-white border-none backdrop-blur-sm pointer-events-none">
-                  {photo.stickers.length} stickers
+                  {photo.stickers.length} {t('projectDetail.stickers')}
                 </Badge>
               )}
             </div>
@@ -250,13 +252,13 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <Camera className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">No photos yet</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('projectDetail.noPhotosYet')}</h3>
             <p className="text-muted-foreground mb-6 max-w-md">
-              This project doesn't have any photos. Start by capturing the first one.
+              {t('projectDetail.noPhotosDesc')}
             </p>
             <Button onClick={() => setLocation(`/camera/${projectId}`)}>
               <Plus className="w-4 h-4 mr-2" />
-              Take Photo
+              {t('projectDetail.takePhoto')}
             </Button>
           </div>
         </Card>
@@ -266,35 +268,35 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
+            <DialogTitle>{t('dialogs.editProject')}</DialogTitle>
             <DialogDescription>
-              Update your project details below.
+              {t('dialogs.enterDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Project Name</Label>
+              <Label htmlFor="edit-name">{t('dialogs.projectName')}</Label>
               <Input
                 id="edit-name"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                placeholder="Enter project name"
+                placeholder={t('dialogs.enterProjectName')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-description">Description (Optional)</Label>
+              <Label htmlFor="edit-description">{t('dialogs.description')}</Label>
               <Textarea
                 id="edit-description"
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Enter project description"
+                placeholder={t('dialogs.enterDescription')}
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Cancel
+              {t('settings.cancel')}
             </Button>
             <Button
               onClick={() => {
@@ -307,7 +309,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               }}
               disabled={!editName.trim()}
             >
-              Save Changes
+              {t('dialogs.saveChanges')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -317,18 +319,18 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogTitle>{t('dialogs.deleteProject')}</AlertDialogTitle>
             <AlertDialogDescription>
               {hasPhotos ? (
                 <div className="space-y-4">
                   <p>
-                    This project contains {photos?.length} photo(s). You must select a project to transfer these photos to before deletion.
+                    {t('dialogs.deleteProjectWithPhotos').replace('{count}', String(photos?.length))}
                   </p>
                   <div className="space-y-2">
-                    <Label htmlFor="transfer-project">Transfer photos to:</Label>
+                    <Label htmlFor="transfer-project">{t('dialogs.transferPhotosTo')}</Label>
                     <Select value={transferProjectId} onValueChange={setTransferProjectId}>
                       <SelectTrigger id="transfer-project">
-                        <SelectValue placeholder="Select a project" />
+                        <SelectValue placeholder={t('dialogs.selectProject')} />
                       </SelectTrigger>
                       <SelectContent>
                         {allProjects?.filter(p => p.id !== projectId).map((p) => (
@@ -342,21 +344,21 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 </div>
               ) : (
                 <p>
-                  Are you sure you want to delete this project? This action cannot be undone.
+                  {t('dialogs.deleteProjectConfirm')}
                 </p>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setTransferProjectId("")}>
-              Cancel
+              {t('settings.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (hasPhotos && !transferProjectId) {
                   toast({
-                    title: "Transfer project required",
-                    description: "Please select a project to transfer photos to.",
+                    title: t('dialogs.transferRequired'),
+                    description: t('dialogs.transferRequiredDesc'),
                     variant: "destructive",
                   });
                   return;
@@ -365,7 +367,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete Project
+              {t('dialogs.deleteProject')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

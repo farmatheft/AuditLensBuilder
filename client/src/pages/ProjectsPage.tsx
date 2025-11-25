@@ -6,9 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FolderOpen, Plus } from "lucide-react";
 import type { Project } from "@/types/schema";
+import { useTranslation } from "@/i18n";
 
 export default function ProjectsPage() {
   const [, setLocation] = useLocation();
+  const { t } = useTranslation();
 
   const { data: projects, isLoading } = useQuery<(Project & { photoCount: number })[]>({
     queryKey: ["/api/projects"],
@@ -36,8 +38,8 @@ export default function ProjectsPage() {
     <div className="container mx-auto p-4 pb-24">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Projects</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage your audit sites</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">{t('projects.title')}</h1>
+          {/* <p className="text-muted-foreground text-sm mt-1">Manage your audit sites</p> */}
         </div>
         <CreateProjectDialog />
       </div>
@@ -58,9 +60,9 @@ export default function ProjectsPage() {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <FolderOpen className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">No projects yet</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('projects.noProjects')}</h3>
             <p className="text-muted-foreground mb-6 max-w-md">
-              Create your first project to start documenting.
+              {t('projects.noProjectsDesc')}
             </p>
             <CreateProjectDialog />
           </CardContent>

@@ -104,5 +104,17 @@ export default {
         confirm: "Tasdiqlash",
         edit: "Tahrirlash",
         add: "Qo'shish"
+    },
+    packagings: {
+        builtin: {
+            black: "Чорная изо",
+            blue: "Синяя изо",
+            green: "Зеленая изо",
+            grey: "Серая изо",
+            red: "Красная изо",
+            stripes: "Полосатая изо",
+            white: "Белая изо",
+            yellow: "Жёлтая изо"
+        }
     }
 }

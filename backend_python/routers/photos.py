@@ -36,6 +36,7 @@ async def create_photo(
     stickers: Optional[str] = Form(None), # JSON string
     captured_at: Optional[str] = Form(None),
     packaging_id: Optional[str] = Form(None),
+    packaging_name: Optional[str] = Form(None),
     hide_date: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
@@ -52,17 +53,21 @@ async def create_photo(
     if packaging_id and packaging_id.strip() and packaging_id != " ":
         if packaging_id.startswith("builtin:"):
             filename = packaging_id.split(":", 1)[1]
-            name = os.path.splitext(filename)[0].capitalize()
+            # Always use packaging_name from client if provided, otherwise derive from filename
+            name = packaging_name if packaging_name else os.path.splitext(filename)[0].capitalize()
             packaging_info = {
                 "name": name,
                 "color": filename,
                 "type": "builtin"
             }
         else:
+            # For custom packages, always use packaging_name from client if provided
             packaging = crud.get_packaging(db, packaging_id)
             if packaging:
+                # Use name from client if provided, otherwise use DB name
+                name = packaging_name if packaging_name else packaging.name
                 packaging_info = {
-                    "name": packaging.name,
+                    "name": name,
                     "color": packaging.color,
                     "type": "custom"
                 }

@@ -16,20 +16,22 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { InsertProject } from "@/types/schema";
+import { useTranslation } from "@/i18n";
 
 export function CreateProjectDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const createMutation = useMutation({
     mutationFn: (data: InsertProject) => apiRequest("POST", "/api/projects", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
-        title: "Project created",
-        description: "Your new project has been created successfully.",
+        title: t('toasts.success'),
+        description: t('toasts.projectUpdatedDesc'),
       });
       setOpen(false);
       setName("");
@@ -37,7 +39,7 @@ export function CreateProjectDialog() {
     },
     onError: () => {
       toast({
-        title: "Error",
+        title: t('toasts.error'),
         description: "Failed to create project. Please try again.",
         variant: "destructive",
       });
@@ -55,45 +57,45 @@ export function CreateProjectDialog() {
       <DialogTrigger asChild>
         <Button className="gap-2" data-testid="button-create-project">
           <Plus className="w-4 h-4" />
-          New Project
+          {t('projects.createNew')}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
+          <DialogTitle>{t('dialogs.createProject')}</DialogTitle>
           <DialogDescription>
-            Create a new project to organize and track photos for different repair or construction jobs.
+            {/* Create a new project to organize and track photos for different repair or construction jobs. */}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Project Name</Label>
+            <Label htmlFor="name">{t('dialogs.projectName')}</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Building Renovation - Main Hall"
+              placeholder={t('dialogs.enterProjectName')}
               required
               data-testid="input-project-name"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
+            <Label htmlFor="description">{t('dialogs.description')}</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add any additional details about this project..."
+              placeholder={t('dialogs.enterDescription')}
               rows={3}
               data-testid="input-project-description"
             />
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              {t('settings.cancel')}
             </Button>
             <Button type="submit" disabled={!name.trim() || createMutation.isPending} data-testid="button-submit-project">
-              {createMutation.isPending ? "Creating..." : "Create Project"}
+              {createMutation.isPending ? t('common.loading') : t('projects.create')}
             </Button>
           </div>
         </form>

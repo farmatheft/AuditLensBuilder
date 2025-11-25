@@ -7,6 +7,7 @@ import { PhotoEditor } from "@/components/PhotoEditor";
 import { useToast } from "@/hooks/use-toast";
 import type { Geolocation, Project } from "@/types/schema";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/i18n";
 
 interface CameraPageProps {
   params: {
@@ -23,6 +24,7 @@ export default function CameraPage({ params }: CameraPageProps) {
   const [capturedAt, setCapturedAt] = useState<string>("");
   const [packagingId, setPackagingId] = useState<string>(" ");
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const { data: project, isLoading } = useQuery<Project>({
     queryKey: ["/api/projects", projectId],
@@ -39,8 +41,8 @@ export default function CameraPage({ params }: CameraPageProps) {
 
   const handleUploadComplete = () => {
     toast({
-      title: "Success",
-      description: "Photo uploaded successfully",
+      title: t('toasts.success'),
+      description: t('toasts.photoUploaded'),
       className: "glass border-green-500/50 text-green-500",
     });
 

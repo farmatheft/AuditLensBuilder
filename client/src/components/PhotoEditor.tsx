@@ -8,6 +8,7 @@ import { LocationPicker } from "@/components/LocationPicker";
 import { PackagingSelector } from "@/components/PackagingSelector";
 import type { Sticker, Geolocation, Packaging } from "@/types/schema";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "@/i18n";
 
 interface PhotoEditorProps {
   imageData: string;
@@ -46,6 +47,7 @@ export function PhotoEditor({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [hideDate, setHideDate] = useState(false);
   const [selectedPackagingId, setSelectedPackagingId] = useState<string>(initialPackagingId || " ");
+  const { t } = useTranslation();
 
   const { data: packagings } = useQuery<Packaging[]>({
     queryKey: ["/api/packagings"],
@@ -273,6 +275,27 @@ export function PhotoEditor({
       }
       formData.append("stickers", JSON.stringify(stickers));
       formData.append("packaging_id", selectedPackagingId);
+
+      // Always send packaging name for both builtin and custom packages
+      if (selectedPackagingId && selectedPackagingId.trim() && selectedPackagingId !== " ") {
+        if (selectedPackagingId.startsWith("builtin:")) {
+          // For builtin packages, send translated name
+          const filename = selectedPackagingId.split(":", 1)[1];
+          const key = filename.split('.')[0].toLowerCase();
+          const translatedName = t(`packagings.builtin.${key}`);
+          // Check if translation exists (returns key if not)
+          if (translatedName !== `packagings.builtin.${key}`) {
+            formData.append("packaging_name", translatedName);
+          }
+        } else {
+          // For custom packages, find the package and send its name
+          const customPackage = packagings?.find(p => p.id === selectedPackagingId);
+          if (customPackage) {
+            formData.append("packaging_name", customPackage.name);
+          }
+        }
+      }
+
       formData.append("hide_date", hideDate.toString());
 
       const xhr = new XMLHttpRequest();
@@ -299,7 +322,7 @@ export function PhotoEditor({
       xhr.send(formData);
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Upload failed. Please try again.");
+      alert(t('toasts.error'));
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -369,7 +392,7 @@ export function PhotoEditor({
               onClick={() => setShowLocationPicker(true)}
               className="hover:text-white hover:bg-gray-800/50 rounded px-2 py-1 -mx-2 -my-1 transition-colors flex items-center gap-1"
             >
-              {currentLocation ? `${currentLocation.latitude.toFixed(4)}, ${currentLocation.longitude.toFixed(4)}` : "No location - click to set"}
+              {currentLocation ? `${currentLocation.latitude.toFixed(4)}, ${currentLocation.longitude.toFixed(4)}` : t('photoEditor.noLocation')}
             </button>
             <div>
               {!hideDate && new Date(capturedAt).toLocaleString('en-CA', {
@@ -389,7 +412,7 @@ export function PhotoEditor({
               value={currentComment}
               onChange={(e) => setCurrentComment(e.target.value)}
               className="bg-gray-900/50 border-gray-700 text-white h-9 text-sm"
-              placeholder="Add comment..."
+              placeholder={t('photoEditor.addComment')}
             />
           </div>
         </div>
@@ -400,17 +423,17 @@ export function PhotoEditor({
 
         {/* Tools */}
         <div className="flex flex-col gap-4 items-center w-full px-2 mt-4">
-          <Label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Stickers</Label>
+          <Label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('photoEditor.stickers')}</Label>
 
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setHideDate(!hideDate)}
             className={`w-12 h-12 rounded-xl p-1 transition-colors ${hideDate ? "bg-blue-500/20 text-blue-400" : "text-gray-400 hover:text-white hover:bg-gray-800"}`}
-            title={hideDate ? "Show Date" : "Hide Date"}
+            title={hideDate ? t('photoEditor.showDate') : t('photoEditor.hideDate')}
           >
             <div className="flex flex-col items-center justify-center">
-              <span className="text-[10px] font-bold">DATE</span>
+              <span className="text-[10px] font-bold">{t('photoEditor.date')}</span>
               {hideDate ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
               ) : (
@@ -474,7 +497,7 @@ export function PhotoEditor({
                 size="icon"
                 onClick={rotateSelected}
                 className="text-blue-400 hover:text-blue-300 hover:bg-gray-800 w-10 h-10"
-                title="Rotate"
+                title={t('photoEditor.rotate')}
               >
                 <RotateCw className="w-5 h-5" />
               </Button>
@@ -483,7 +506,7 @@ export function PhotoEditor({
                 size="icon"
                 onClick={() => resizeSelected("up")}
                 className="text-blue-400 hover:text-blue-300 hover:bg-gray-800 w-10 h-10"
-                title="Larger"
+                title={t('photoEditor.larger')}
               >
                 <Maximize2 className="w-5 h-5" />
               </Button>
@@ -492,7 +515,7 @@ export function PhotoEditor({
                 size="icon"
                 onClick={() => resizeSelected("down")}
                 className="text-blue-400 hover:text-blue-300 hover:bg-gray-800 w-10 h-10"
-                title="Smaller"
+                title={t('photoEditor.smaller')}
               >
                 <Minimize2 className="w-5 h-5" />
               </Button>
@@ -501,7 +524,7 @@ export function PhotoEditor({
                 size="icon"
                 onClick={deleteSelected}
                 className="text-red-400 hover:text-red-300 hover:bg-gray-800 w-10 h-10"
-                title="Delete"
+                title={t('photoEditor.delete')}
               >
                 <Trash2 className="w-5 h-5" />
               </Button>
@@ -519,7 +542,7 @@ export function PhotoEditor({
             onClick={onCancel}
             className="text-gray-400 hover:text-white text-xs"
           >
-            Back
+            {t('photoEditor.back')}
           </Button>
           <Button
             onClick={handleUpload}

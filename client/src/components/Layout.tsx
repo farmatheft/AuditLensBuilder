@@ -1,9 +1,11 @@
 import { useLocation } from "wouter";
 import { Home, Layers, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     const [location, setLocation] = useLocation();
+    const { t } = useTranslation();
 
     // Hide nav on camera and editor pages for full immersion
     const isImmersive = location.startsWith("/camera") || location.startsWith("/editor");
@@ -20,20 +22,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         active={location === "/" || location.startsWith("/projects")}
                         onClick={() => setLocation("/")}
                         icon={Home}
-                        label="Projects"
+                        label={t('nav.projects')}
                     />
 
                     <NavButton
                         active={location === "/gallery"}
                         onClick={() => setLocation("/gallery")}
                         icon={Layers}
-                        label="Gallery"
+                        label={t('nav.gallery')}
                     />
                     <NavButton
                         active={location === "/settings"}
                         onClick={() => setLocation("/settings")}
                         icon={Settings}
-                        label="Settings"
+                        label={t('nav.settings')}
                     />
                 </nav>
             )}
