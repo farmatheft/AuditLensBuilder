@@ -10,6 +10,7 @@ export interface Sticker {
     height: number;
     rotation: number;
     packagingId?: string; // For packaging stickers
+    packagingFilename?: string; // Image filename for packaging stickers
 }
 
 // Geolocation type

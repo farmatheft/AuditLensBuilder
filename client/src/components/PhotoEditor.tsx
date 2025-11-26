@@ -85,12 +85,29 @@ export function PhotoEditor({
   useEffect(() => {
     const packagingSticker = stickers.find(s => s.type === "packaging");
     if (packagingSticker && selectedPackagingId && selectedPackagingId !== " ") {
-      // Update the packaging sticker's packagingId
+      // Get the filename for the new packaging
+      let filename = "";
+      if (selectedPackagingId.startsWith("builtin:")) {
+        const parts = selectedPackagingId.split(":");
+        if (parts.length > 1) {
+          filename = parts[1];
+        }
+      } else {
+        // Custom packaging - get filename from packagings data
+        const pkg = packagings?.find(p => p.id === selectedPackagingId);
+        if (pkg) {
+          filename = pkg.color; // color field stores the filename
+        }
+      }
+
+      // Update the packaging sticker's packagingId and filename
       setStickers(stickers.map(s =>
-        s.type === "packaging" ? { ...s, packagingId: selectedPackagingId } : s
+        s.type === "packaging"
+          ? { ...s, packagingId: selectedPackagingId, packagingFilename: filename }
+          : s
       ));
     }
-  }, [selectedPackagingId]);
+  }, [selectedPackagingId, packagings]);
 
   const redrawCanvas = (overrideSelectedSticker?: string | null) => {
     const canvas = canvasRef.current;
@@ -126,10 +143,12 @@ export function PhotoEditor({
           if (!packagingImagesRef.current.has(packagingId)) {
             const img = new Image();
             const isBuiltin = packagingId.startsWith("builtin:");
-            const filename = isBuiltin ? packagingId.split(":")[1] : "";
 
-            if (isBuiltin && filename) {
-              img.src = `/assets/packages/builtin/${filename}`;
+            if (isBuiltin) {
+              const parts = packagingId.split(":");
+              if (parts.length > 1 && parts[1]) {
+                img.src = `/assets/packages/builtin/${parts[1]}`;
+              }
             } else {
               // For custom packaging, need to get the filename from packagings data
               const pkg = packagings?.find(p => p.id === packagingId);
@@ -318,12 +337,15 @@ export function PhotoEditor({
       if (selectedPackagingId && selectedPackagingId.trim() && selectedPackagingId !== " ") {
         if (selectedPackagingId.startsWith("builtin:")) {
           // For builtin packages, send translated name
-          const filename = selectedPackagingId.split(":", 1)[1];
-          const key = filename.split('.')[0].toLowerCase();
-          const translatedName = t(`packagings.builtin.${key}`);
-          // Check if translation exists (returns key if not)
-          if (translatedName !== `packagings.builtin.${key}`) {
-            formData.append("packaging_name", translatedName);
+          const parts = selectedPackagingId.split(":");
+          if (parts.length > 1) {
+            const filename = parts[1];
+            const key = filename.split('.')[0].toLowerCase();
+            const translatedName = t(`packagings.builtin.${key}`);
+            // Check if translation exists (returns key if not)
+            if (translatedName !== `packagings.builtin.${key}`) {
+              formData.append("packaging_name", translatedName);
+            }
           }
         } else {
           // For custom packages, find the package and send its name
@@ -530,6 +552,21 @@ export function PhotoEditor({
               variant="ghost"
               size="icon"
               onClick={() => {
+                // Get filename for the selected packaging
+                let filename = "";
+                if (selectedPackagingId.startsWith("builtin:")) {
+                  const parts = selectedPackagingId.split(":");
+                  if (parts.length > 1) {
+                    filename = parts[1];
+                  }
+                } else {
+                  // Custom packaging
+                  const pkg = packagings?.find(p => p.id === selectedPackagingId);
+                  if (pkg) {
+                    filename = pkg.color;
+                  }
+                }
+
                 const newSticker: Sticker = {
                   id: `sticker-packaging-${Date.now()}`,
                   type: "packaging",
@@ -539,6 +576,7 @@ export function PhotoEditor({
                   height: 120,
                   rotation: 0,
                   packagingId: selectedPackagingId,
+                  packagingFilename: filename,
                 };
                 setStickers([...stickers, newSticker]);
                 setSelectedSticker(newSticker.id);
@@ -550,7 +588,7 @@ export function PhotoEditor({
               <img
                 src={
                   selectedPackagingId.startsWith("builtin:")
-                    ? `/assets/packages/builtin/${selectedPackagingId.split(":")[1]}`
+                    ? `/assets/packages/builtin/${selectedPackagingId.substring(8)}`
                     : `/assets/packages/custom/${packagings?.find(p => p.id === selectedPackagingId)?.color}`
                 }
                 alt="Packaging"

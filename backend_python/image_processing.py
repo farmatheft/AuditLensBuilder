@@ -18,9 +18,25 @@ def draw_sticker(base_img: Image.Image, sticker_data: Dict[str, Any]):
     h = int(sticker_data.get("height", 100))
     rot = sticker_data.get("rotation", 0)
     
-    # Determine image filename
-    filename = "arrow.png" if s_type == "arrow" else "dpt.png"
-    filepath = os.path.join(STICKERS_DIR, filename)
+    # Handle packaging stickers separately
+    if s_type == "packaging":
+        packaging_id = sticker_data.get("packagingId")
+        packaging_filename = sticker_data.get("packagingFilename")
+        
+        if not packaging_id or not packaging_filename:
+            print(f"Packaging sticker missing required fields: packagingId={packaging_id}, packagingFilename={packaging_filename}")
+            return
+            
+        # Determine path based on packaging type
+        if packaging_id.startswith("builtin:"):
+            filepath = os.path.join(PACKAGES_DIR, "builtin", packaging_filename)
+        else:
+            # Custom packaging
+            filepath = os.path.join(PACKAGES_DIR, "custom", packaging_filename)
+    else:
+        # Determine image filename for arrow/dpt stickers
+        filename = "arrow.png" if s_type == "arrow" else "dpt.png"
+        filepath = os.path.join(STICKERS_DIR, filename)
     
     if not os.path.exists(filepath):
         print(f"Sticker file not found: {filepath}")

@@ -127,14 +127,14 @@ export default {
 
     packagings: {
         builtin: {
-            black: "Black iso",
-            blue: "Blue iso",
-            green: "Green iso",
-            grey: "Grey iso",
-            red: "Red iso",
-            stripes: "Stripes iso",
-            white: "White iso",
-            yellow: "Yellow iso"
+            black: "Black tape",
+            blue: "Blue tape",
+            green: "Green tape",
+            grey: "Grey tape",
+            red: "Red tape",
+            stripes: "Stripes tape",
+            white: "White tape",
+            yellow: "Yellow tape"
         }
     }
 };
