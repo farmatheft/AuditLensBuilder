@@ -20,9 +20,22 @@ export interface Geolocation {
     accuracy?: number;
 }
 
+// User type
+export interface User {
+    id: number;
+    telegramId: string;
+    firstName: string;
+    lastName: string;
+    username: string;
+    isBot: boolean;
+    languageCode: string;
+    createdAt: string;
+}
+
 // Project type
 export interface Project {
     id: string;
+    userId: number;
     name: string;
     description: string | null;
     createdAt: string;
@@ -32,6 +45,7 @@ export interface Project {
 // Photo type
 export interface Photo {
     id: string;
+    userId: number;
     projectId: string;
     filename: string;
     comment: string | null;
@@ -74,6 +88,7 @@ export type InsertPhoto = z.infer<typeof insertPhotoSchema>;
 
 export interface Packaging {
     id: string;
+    userId?: number;
     name: string;
     color: string;
     createdAt: string;

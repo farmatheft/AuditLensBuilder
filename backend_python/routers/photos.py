@@ -11,6 +11,12 @@ from .. import crud, models, schemas
 from ..database import get_db
 from ..image_processing import composite_image
 
+# Hardcoded User ID for now (as requested)
+HARDCODED_USER_ID = 1
+
+def get_current_user_id():
+    return HARDCODED_USER_ID
+
 router = APIRouter(
     prefix="/api/photos",
     tags=["photos"],
@@ -21,8 +27,8 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.get("", response_model=List[schemas.Photo])
-def read_photos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    photos = db.query(models.Photo).order_by(models.Photo.created_at.desc()).offset(skip).limit(limit).all()
+def read_photos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    photos = crud.get_photos(db, user_id=user_id, skip=skip, limit=limit)
     return photos
 
 @router.post("", response_model=schemas.Photo, status_code=201)
@@ -38,10 +44,11 @@ async def create_photo(
     packaging_id: Optional[str] = Form(None),
     packaging_name: Optional[str] = Form(None),
     hide_date: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
 ):
-    # Validate project exists
-    project = crud.get_project(db, project_id)
+    # Validate project exists and belongs to user
+    project = crud.get_user_project(db, project_id, user_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -61,7 +68,8 @@ async def create_photo(
                 "type": "builtin"
             }
         else:
-            # For custom packages, always use packaging_name from client if provided
+            # For custom packages, verify it exists (ownership check handles visibility effectively,
+            # but ideally we should verify user owns it if it's custom)
             packaging = crud.get_packaging(db, packaging_id)
             if packaging:
                 # Use name from client if provided, otherwise use DB name
@@ -106,9 +114,6 @@ async def create_photo(
         f.write(processed_image_data)
         
     # Create DB entry
-    # We need to construct the Pydantic model for creation
-    # Note: stickers_list is a list of dicts, we need to convert to Pydantic models or let validation handle it
-    # But crud.create_photo expects schemas.PhotoCreate which expects stickers as List[StickerBase] objects
     
     sticker_objs = []
     for s in stickers_list:
@@ -128,18 +133,19 @@ async def create_photo(
         packaging_id=packaging_id if packaging_id and packaging_id.strip() and packaging_id != " " else None
     )
     
-    return crud.create_photo(db=db, photo=photo_create, filename=filename)
+    return crud.create_photo(db=db, photo=photo_create, filename=filename, user_id=user_id)
 
 @router.get("/{photo_id}", response_model=schemas.Photo)
-def read_photo(photo_id: str, db: Session = Depends(get_db)):
-    db_photo = crud.get_photo(db, photo_id=photo_id)
+def read_photo(photo_id: str, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    db_photo = crud.get_photo(db, photo_id=photo_id, user_id=user_id)
     if db_photo is None:
         raise HTTPException(status_code=404, detail="Photo not found")
     return db_photo
 
 @router.get("/{photo_id}/file")
-def get_photo_file(photo_id: str, db: Session = Depends(get_db)):
-    db_photo = crud.get_photo(db, photo_id=photo_id)
+def get_photo_file(photo_id: str, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    # Verify access
+    db_photo = crud.get_photo(db, photo_id=photo_id, user_id=user_id)
     if db_photo is None:
         raise HTTPException(status_code=404, detail="Photo not found")
     
@@ -150,11 +156,14 @@ def get_photo_file(photo_id: str, db: Session = Depends(get_db)):
     return FileResponse(filepath)
 
 @router.delete("/{photo_id}", status_code=204)
-def delete_photo(photo_id: str, db: Session = Depends(get_db)):
-    db_photo = crud.get_photo(db, photo_id=photo_id)
+def delete_photo(photo_id: str, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    db_photo = crud.get_photo(db, photo_id=photo_id, user_id=user_id)
     if db_photo:
         filepath = os.path.join(UPLOAD_DIR, db_photo.filename)
         if os.path.exists(filepath):
-            os.remove(filepath)
-        crud.delete_photo(db, photo_id=photo_id)
+            try:
+                os.remove(filepath)
+            except OSError:
+                pass # Fail silently if file already gone
+        crud.delete_photo(db, photo_id=photo_id, user_id=user_id)
     return None

@@ -6,7 +6,7 @@ import os
 
 from . import models
 from .database import engine
-from .routers import projects, photos, packagings
+from .routers import projects, photos, packagings, auth
 
 # Create tables
 models.Base.metadata.create_all(bind=engine)
@@ -23,6 +23,7 @@ app.add_middleware(
 )
 
 # Include API routers FIRST - before any catch-all routes
+app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(photos.router)
 app.include_router(packagings.router)
