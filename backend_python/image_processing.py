@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Tuple
 import math
 import os
-from . import schemas
+import schemas
 
 # Path to stickers directory
 STICKERS_DIR = os.path.join(os.path.dirname(__file__), "assets", "stickers")

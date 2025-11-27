@@ -7,9 +7,11 @@ import os
 import json
 import uuid
 
-from .. import crud, models, schemas
-from ..database import get_db
-from ..image_processing import composite_image
+import crud
+import models
+import schemas
+from database import get_db
+from image_processing import composite_image
 
 # Hardcoded User ID for now (as requested)
 HARDCODED_USER_ID = 1

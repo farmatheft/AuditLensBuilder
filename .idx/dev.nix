@@ -3,6 +3,8 @@
   packages = [
     pkgs.nodejs_20
     pkgs.python313Full
+    pkgs.docker
+    pkgs.docker-compose
   ];
   idx.extensions = [
     "svelte.svelte-vscode"

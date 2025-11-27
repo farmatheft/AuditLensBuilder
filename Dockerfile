@@ -1,38 +1,15 @@
+# Stage 1: Build the client-side application
 FROM node:20-alpine AS builder
-
 WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci
-
-# Copy source code
 COPY . .
-
-# Build the application
+RUN npm ci
 RUN npm run build
 
-# Production stage
-FROM node:20-alpine
-
+# Stage 2: Create the Python server runtime
+FROM python:3.9-slim
 WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install production dependencies only
-RUN npm ci --omit=dev
-
-# Copy built application from builder
-COPY --from=builder /app/dist ./dist
-
-# Create uploads directory
-RUN mkdir -p uploads
-
-# Expose port
-EXPOSE 5000
-
-# Start the application
-CMD ["npm", "start"]
+COPY --from=builder /app/backend_python .
+RUN pip install --no-cache-dir -r requirements.txt
+ENV PORT 8080
+EXPOSE 8080
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

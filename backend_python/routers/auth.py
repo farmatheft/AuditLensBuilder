@@ -7,8 +7,10 @@ import json
 from urllib.parse import parse_qs, unquote
 import os
 
-from .. import crud, models, schemas
-from ..database import get_db
+import crud
+import models
+import schemas
+from database import get_db
 
 router = APIRouter(
     prefix="/api/auth",
