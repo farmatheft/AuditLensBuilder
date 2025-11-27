@@ -12,7 +12,7 @@
     "be:run": "backend_python/venv/bin/uvicorn backend_python.main:app --host 0.0.0.0 --port 8000",
     "be:buildrun": "npm run build && npm run be:run",
     "ngrok": "ngrok http 8000",
-    "builddev": "npm run build && backend_python/venv/bin/uvicorn backend_python.main:app"
+    "builddev": "npm run build && source .venv/bin/activate && cd backend_python && uvicorn main:app"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

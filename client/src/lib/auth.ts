@@ -6,6 +6,7 @@ interface AuthState {
   user: User | null;
   isLoading: boolean;
   error: string | null;
+  isDemo: boolean;
   setUser: (user: User | null) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
@@ -28,6 +29,7 @@ export const useAuth = create<AuthState>()(
       userId: null,
       isLoading: true,
       error: null,
+      isDemo: false,
       setUser: (user) => set({ user, userId: user ? user.id : null }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
@@ -35,61 +37,29 @@ export const useAuth = create<AuthState>()(
         set({ isLoading: true, error: null });
         const tg = getTelegramWebApp();
 
-        if (!tg) {
-          // If not in Telegram, maybe in dev mode?
-          if (import.meta.env.DEV) {
-            console.log("Dev mode: Attempting to use dev user");
-            try {
-              const res = await fetch("/api/auth/telegram", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ initData: "dev" }),
-              });
-              
-              if (res.ok) {
-                const user = await res.json();
-                set({ user, userId: user.id, isLoading: false });
-                return;
-              }
-            } catch (e) {
-               console.error("Failed dev auth", e);
-            }
-          }
-          
+        if (!tg || !tg.initData) {
+          console.log("Running in demo mode");
           set({ 
+            user: {
+              id: 1,
+              telegramId: "1",
+              firstName: "Demo",
+              lastName: "User",
+              username: "demouser",
+              isBot: false,
+              languageCode: "en",
+              createdAt: new Date().toISOString(),
+            },
+            userId: 1,
             isLoading: false, 
-            error: "Telegram WebApp not available. Please open in Telegram." 
+            isDemo: true,
+            error: "Running in demo mode. Please open in Telegram for full functionality." 
           });
           return;
         }
 
         tg.ready();
         const initData = tg.initData;
-
-        if (!initData) {
-            // If in dev mode and opened via direct link without initData, try dev auth
-             if (import.meta.env.DEV) {
-                console.log("Dev mode (Telegram available but no initData): Attempting to use dev user");
-                try {
-                  const res = await fetch("/api/auth/telegram", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ initData: "dev" }),
-                  });
-                  
-                  if (res.ok) {
-                    const user = await res.json();
-                    set({ user, userId: user.id, isLoading: false });
-                    return;
-                  }
-                } catch (e) {
-                   console.error("Failed dev auth", e);
-                }
-            }
-            
-            set({ isLoading: false, error: "No Telegram init data found." });
-            return;
-        }
 
         try {
           const res = await fetch("/api/auth/telegram", {
@@ -106,7 +76,7 @@ export const useAuth = create<AuthState>()(
           }
 
           const user = await res.json();
-          set({ user, userId: user.id, isLoading: false });
+          set({ user, userId: user.id, isLoading: false, isDemo: false });
           
           // Expand the WebApp
           tg.expand();
@@ -121,7 +91,7 @@ export const useAuth = create<AuthState>()(
     }),
     {
       name: "auth-storage",
-      partialize: (state) => ({ user: state.user, userId: state.userId }), // Persist user info
+      partialize: (state) => ({ user: state.user, userId: state.userId, isDemo: state.isDemo }), // Persist user info
     }
   )
 );

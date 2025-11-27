@@ -80,8 +80,17 @@ def authenticate_telegram_user(auth_data: TelegramAuth, db: Session = Depends(ge
          # Return the hardcoded dev user
          user = crud.get_user(db, 1)
          if not user:
-             # Should satisfy the model if seed ran, but just in case
-             raise HTTPException(status_code=500, detail="Dev user not found")
+            # If dev user not found, create it
+            user_create = schemas.UserCreate(
+                id=1,
+                telegram_id="1",
+                first_name="Demo",
+                last_name="User",
+                username="demouser",
+                language_code="en",
+                is_bot=False
+            )
+            user = crud.create_user(db, user_create)
          return user
 
     try:
