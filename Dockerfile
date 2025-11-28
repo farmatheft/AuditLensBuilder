@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Dest: /app/dist/public (to match main.py expectation)
 COPY --from=frontend /app/backend_python/dist/public ./dist/public
 
-EXPOSE 8000
+EXPOSE 8080
 
 # Start the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "${PORT:-8080}"]
