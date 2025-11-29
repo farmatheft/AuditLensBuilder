@@ -37,9 +37,12 @@ import { useTranslation, languages } from "@/i18n";
 
 export default function SettingsPage() {
     const { t, language, setLanguage } = useTranslation();
-    const { data: packagings, isLoading } = useQuery<Packaging[]>({
+    const { data: allPackagings, isLoading } = useQuery<Packaging[]>({
         queryKey: ["/api/packagings"],
     });
+
+    // Filter out builtin packagings (those without userId)
+    const packagings = allPackagings?.filter(p => p.userId != null);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingPackaging, setEditingPackaging] = useState<Packaging | null>(null);
