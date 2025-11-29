@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    image: farmatheft/audit
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./uploads:/app/backend_python/uploads
+    restart: unless-stopped
