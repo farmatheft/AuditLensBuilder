@@ -1,5 +1,6 @@
 from database import engine, SessionLocal
 import models
+import os
 
 def init_db():
     print("Creating database tables...")
@@ -9,6 +10,7 @@ def init_db():
     # Create the hardcoded user if it doesn't exist
     db = SessionLocal()
     try:
+        # Create the hardcoded user if it doesn't exist
         user_id = 1
         user = db.query(models.User).filter(models.User.id == user_id).first()
         if not user:
@@ -28,8 +30,34 @@ def init_db():
             print("Default user created.")
         else:
             print("Default user already exists.")
+
+        # Seed builtin packagings
+        builtin_dir = os.path.join(os.path.dirname(__file__), "assets", "packages", "builtin")
+        if os.path.exists(builtin_dir):
+            print(f"Scanning for builtin packagings in {builtin_dir}...")
+            for filename in os.listdir(builtin_dir):
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    pkg_id = f"builtin:{filename}"
+                    existing_pkg = db.query(models.Packaging).filter(models.Packaging.id == pkg_id).first()
+                    
+                    if not existing_pkg:
+                        print(f"Creating builtin packaging: {pkg_id}")
+                        name = os.path.splitext(filename)[0].capitalize()
+                        new_pkg = models.Packaging(
+                            id=pkg_id,
+                            user_id=None, # System/builtin packaging
+                            name=name,
+                            color=filename # Storing filename as 'color' based on router logic
+                        )
+                        db.add(new_pkg)
+            db.commit()
+            print("Builtin packagings seeded.")
+        else:
+            print(f"Builtin packages directory not found at {builtin_dir}")
+
     except Exception as e:
-        print(f"Error seeding user: {e}")
+        print(f"Error seeding database: {e}")
+        db.rollback()
     finally:
         db.close()
 

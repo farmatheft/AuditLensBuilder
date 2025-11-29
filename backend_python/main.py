@@ -5,11 +5,15 @@ from fastapi.responses import FileResponse
 import os
 
 import models
+import seed
 from database import engine
 from routers import projects, photos, packagings, auth
 
 # Create tables
 models.Base.metadata.create_all(bind=engine)
+
+# Seed initial data
+seed.init_db()
 
 app = FastAPI(title="AuditLens Builder API")
 
