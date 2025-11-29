@@ -35,6 +35,7 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
 
   useEffect(() => {
     let mounted = true;
+    let localStream: MediaStream | null = null;
 
     const startCamera = async () => {
       try {
@@ -43,14 +44,24 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
           audio: false,
         });
 
-        if (mounted && videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          setStream(mediaStream);
-          setCameraError("");
+        if (!mounted) {
+          mediaStream.getTracks().forEach(track => track.stop());
+          return;
         }
+
+        localStream = mediaStream;
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+        
+        setStream(mediaStream);
+        setCameraError("");
       } catch (err) {
         console.error("Camera access error:", err);
-        setCameraError(t('camera.cameraNotAvailable'));
+        if (mounted) {
+          setCameraError(t('camera.cameraNotAvailable'));
+        }
       }
     };
 
@@ -68,12 +79,16 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
           },
           (err) => {
             console.error("Geolocation error:", err);
-            setLocationError("Unable to get location");
+            if (mounted) {
+              setLocationError("Unable to get location");
+            }
           },
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       } else {
-        setLocationError("Geolocation not supported");
+        if (mounted) {
+          setLocationError("Geolocation not supported");
+        }
       }
     };
 
@@ -82,11 +97,15 @@ export function CameraCapture({ onCapture, comment, onCommentChange, projectName
 
     return () => {
       mounted = false;
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
     };
-  }, [t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCaptureAttempt = () => {
     capturePhoto();
